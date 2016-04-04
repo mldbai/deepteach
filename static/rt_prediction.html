@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Image classifier</title>
+</head>
+<body style="height: 900px">
+    <i id="spinner" class="fa fa-spinner fa-spin fa-5x" style="position: fixed; left: 50%; top: 50%; display: none"></i>
+ <div class="container">
+<h1>Image classifier</h1>
+
+<br>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">Configuration</h3>
+  </div>
+  <div class="panel-body">
+<form class="form-horizontal">
+  <div class="form-group">
+    <label for="deployId" class="col-sm-2 control-label">Deploy Id</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" id="deployId" placeholder="Deploy Id">
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="imageUrl" class="col-sm-2 control-label">Image URL</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" id="imageUrl" placeholder="Image URL">
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-10">
+        <button type="button" id="submitButton" class="btn btn-primary">Classify</button>
+    </div>
+    <br><br>
+  </div>
+
+    <div class="form-group" id="sampleAdiv">
+    <label for="sampleA" class="col-sm-2 control-label">Sample training examples for A</label>
+    <div class="col-sm-10">
+       <div class="well panel-success" id="sampleA">
+
+        </div>
+    </div>
+  </div>
+    <div class="form-group" id="sampleBdiv">
+    <label for="sampleB" class="col-sm-2 control-label">Sample training examples for B</label>
+    <div class="col-sm-10">
+       <div class="well panel-danger" id="sampleB">
+
+        </div>
+    </div>
+  </div>
+</form>
+ </div>
+</div>
+
+<br>
+<br>
+
+<div class="panel panel-default" id="predictionPannel">
+  <div class="panel-heading">
+    <h3 class="panel-title">Prediction results</h3>
+  </div>
+  <div class="panel-body">
+<table width="80%" border="0" cellpadding="10">
+    <tr>
+        <td><b>Similarity with A</b></td>
+        <td colspan="2">
+            <br>
+            <!--
+            <div class="progress">
+              <div class="progress-bar progress-bar-danger" style="width: 35%" id="similarityRed">
+                <span class="sr-only"></span>
+              </div>
+              <div class="progress-bar progress-bar-success" style="width: 65%" id="similarityGreen">
+                <span class="sr-only"></span>
+              </div>
+            </div>
+            -->
+            <div class="progress">
+              <div class="progress-bar progress-bar-primary" style="width: 0%" id="similarity">
+                <span class="sr-only"></span>
+              </div>
+            <div>
+        </td>
+    </tr>
+    <tr>
+        <td valign="top"><b>Prediction</b></td>
+        <td colspan="2">
+            <div class="panel panel-success" id="predApannel">
+              <div class="panel-heading">
+                <h3 class="panel-title">The prediction is A</h3>
+              </div>
+              <div class="panel-body" id="predA">
+              </div>
+            </div>
+
+            <div class="panel panel-danger" id="predBpannel">
+              <div class="panel-heading">
+                <h3 class="panel-title">The prediction is B</h3>
+              </div>
+              <div class="panel-body" id="predB">
+              </div>
+            </div>
+        </td>
+    </tr>
+
+</table>
+
+ </div>
+</div>
+
+<script>
+$( document ).ready(function() {
+
+    $("#sampleAdiv").hide();
+    $("#sampleBdiv").hide();
+    $("#predictionPannel").hide();
+
+    function getParameterByName(name, url) {
+        if (!url) url = window.location.href;
+        name = name.replace(/[\[\]]/g, "\\$&");
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
+    }
+
+    var did = getParameterByName("deploy_id")
+    console.log("did", did )
+    if(did == null || did == ''){
+      $("#spinner").show()
+    } else{
+
+      $("#spinner").hide()
+    }
+
+    $("#submitButton").click(function() {
+        $.ajax({
+          type: "POST",
+          url: "../prediction",
+          data: {
+                "deploy_id": $('#deployId').val(),
+                "image_url": $('#imageUrl').val()
+            },
+          dataType: "json",
+            error: (function(msg) {
+                console.log(msg);
+                alert( "error " + msg);
+              }),
+          success: function( data ) {
+                // {"example_image":{"A":"castle-3","B":"cabin-2"},"prediction":["B",0]}
+
+                $("#sampleAdiv").show();
+                $("#sampleBdiv").show();
+                $("#predictionPannel").show();
+
+                var prefix = "images/";
+
+                $("#sampleA").empty();
+                $("#sampleB").empty();
+
+                $("#predA").empty();
+                $("#predApannel").hide();
+                $("#predB").empty();
+                $("#predBpannel").hide();
+
+                $("#distA").empty();
+                $("#distB").empty();
+
+                var imagePath = function(x) {
+                    return prefix+x[1]+"/"+x[0]+".jpg";
+                };
+
+                for(var i=0; i<data["example_image"]["A"].length; i++) {
+                    $("#sampleA").append("<img src=\""+ imagePath(data["example_image"]["A"][i]) +"\" style=\"padding-left:5px\">");
+                }
+                for(var i=0; i<data["example_image"]["B"].length; i++) {
+                    $("#sampleB").append("<img src=\""+ imagePath(data["example_image"]["B"][i]) +"\" style=\"padding-left:5px\">");
+                }
+
+                $("#distA").append("<p>"+data["similarity"]+"</p>");
+                //$("#distB").append("<p></p>");
+
+                // predicted good
+                /*
+                if(data["similarity"]["score"] >= data["similarity"]["threshold"]) {
+                    redSim = data["similarity"]["threshold"] / data["similarity"]["max"];
+                    greenSim = data["similarity"]["score"] / data["similarity"]["max"] - redSim;
+                }
+                // predicted bad
+                else {
+                    greenSim = 0;
+                    redSim = data["similarity"]["score"] / data["similarity"]["max"];
+                }
+                */
+                sim = data["similarity"]["score"] / data["similarity"]["max"];
+
+
+                //$('#similarityRed').css('width', (redSim*100)+'%').attr('aria-valuenow', redSim * 100);
+                //$('#similarityGreen').css('width', (greenSim*100)+'%').attr('aria-valuenow', greenSim * 100);
+
+                $('#similarity').css('width', (sim*100)+'%').attr('aria-valuenow', sim * 100);
+
+                //$('.progress-bar').innerHTML = similarity + "%";
+
+                $("#pred"+data["prediction"][0]).append("<img src=\""+$('#imageUrl').val()+"\" style=\"max-width:300px\">");
+                $("#pred"+data["prediction"][0]+"pannel").show();
+
+            }
+        });
+    });
+
+    $('#deployId').val(did);
+    if(did != null && did != '' ){
+      $("#spinner").hide()
+    }
+
+});
+
+</script>
+
+</div>
+</body>
+</html>
