@@ -255,7 +255,7 @@
 	function init() {
 	    var dataset = QueryString['dataset'];
 	    $.ajax({
-	        url: "/v1/query?q=select regex_replace(regex_replace(location, '/.*/', ''), '.jpg', '') from sample(" + dataset + ",{rows:10})&format=table&rowNames=false&headers=false"
+	        url: "../../../../../v1/query?q=select regex_replace(regex_replace(location, '/.*/', ''), '.jpg', '') from sample(" + dataset + ",{rows:10})&format=table&rowNames=false&headers=false"
 	    }).done(function (rows) {
 	        var s = rows2State(rows);
 	        var u = ui(s);
