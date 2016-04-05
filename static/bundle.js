@@ -117,16 +117,21 @@
 	        }
 	    }, []);
 	    var color = HSVtoRGB(dist * 0.333, 1, 1);
-	    var bar = pie(dist, color);
-	    return h('div', { style: { display: "inline" } }, [img, bar]);
+	    var p = pie(dist, color);
+	    return h('div', { style: { display: "inline" } }, [img, p]);
 	};
 	function Panel(id, style, idDists, title) {
 	    var o1 = idDists.map(Img);
 	    var o = addTags(o1);
 	    return o.DIVp({ id: id, className: 'sortable', style: style });
 	}
+	// Add HTML tag as a function into array, so for an array like a = ['abc', 'def']
+	// a.TD = TD(a)
+	// a.mapTD = [TD('abc', TD('def'))]
+	// a.TDp(prop: dict) = TD(a, prop)
+	// a.mapTDp(prop: dict) = [TD('abc', prop), TD('def', prop)]
+	// where TD is h('td', ...) from hyperscript
 	function addTags(o) {
-	    //TODO: add prefix to avoid name conflict. function to remove added tags. pass in tags.
 	    if (o.hasOwnProperty('TD')) {
 	        return o;
 	    }
@@ -166,6 +171,7 @@
 	        style: btnStyle
 	    }, "Add All");
 	};
+	// This function creates the whole ui
 	function ui(s) {
 	    var pStyle = {
 	        minHeight: "300px",
@@ -180,7 +186,8 @@
 	    };
 	    var sampleStyle = _.clone(pStyle);
 	    sampleStyle['width'] = '96vw';
-	    addTags(Array.prototype); //This is dangerous
+	    //This modify array's prototype.
+	    addTags(Array.prototype);
 	    var aStyle = { maxHeight: "500px", overflow: "auto", marginBottom: "15px", minHeight: "100px" };
 	    var pa = Panel('panelA', pStyle, s.a, 'A');
 	    var pb = Panel('panelB', pStyle, s.b, 'B');
@@ -230,6 +237,7 @@
 	        receive: handleReceive
 	    }).disableSelection();
 	}
+	// parse the query string and return a dictionary.
 	var QueryString = function () {
 	    // This function is anonymous, is executed immediately and
 	    // the return value is assigned to QueryString!
@@ -39333,6 +39341,7 @@
 	var h = V.h, diff = V.diff, patch = V.patch, create = V.create;
 	var svg = __webpack_require__(41);
 	function pie(percent, color) {
+	    // create a one slice pie chart with percent as percentage and color.
 	    if (percent < 0.01) {
 	        return null;
 	    }

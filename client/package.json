@@ -1,0 +1,35 @@
+{
+  "name": "mldb_demo",
+  "version": "0.0.0",
+  "description": "demo for MLDB",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/datacratic/mldb_demo.git"
+  },
+  "keywords": [
+    "MLDB",
+    "Demo"
+  ],
+  "author": "Hao Deng",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/datacratic/mldb_demo/issues"
+  },
+  "devDependencies": {
+    "ts-loader": "~0.7.2",
+    "typescript": "^1.8.9",
+    "typings": "^0.6.8",
+    "webpack": "~1.12.11",
+    "webpack-dev-server": "~1.14.1"
+  },
+  "dependencies": {
+    "jquery": "~2.2.0",
+    "lodash": "~3.10.1",
+    "jquery-ui": "~1.10.5",
+    "virtual-dom": "~2.1.1"
+  }
+}
