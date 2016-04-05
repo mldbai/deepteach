@@ -82,11 +82,11 @@ function onDeploy(evt: MouseEvent){
 }
 
 function addAllToA(evt: MouseEvent){
-    $('#panelMaybeA > div').appendTo('#panelA')
+    $('#panelMaybeA > span').appendTo('#panelA')
 }
 
 function addAllToB(evt: MouseEvent){
-    $('#panelMaybeB > div').appendTo('#panelB')
+    $('#panelMaybeB > span').appendTo('#panelB')
 }
 
 type Row = [string]
@@ -114,7 +114,7 @@ const Img = ([imgId, dist]: IdDist) => {
     } ,[] )
     let color = HSVtoRGB(dist * 0.333, 1, 1)
     let p = pie(dist, color)
-    return h('div', {style:{display: "inline"}}, [img, p])
+    return h('span', {style:{}}, [img, p])
 
 }
 

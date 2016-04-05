@@ -100,10 +100,10 @@
 	    sendSimilar(true);
 	}
 	function addAllToA(evt) {
-	    $('#panelMaybeA > div').appendTo('#panelA');
+	    $('#panelMaybeA > span').appendTo('#panelA');
 	}
 	function addAllToB(evt) {
-	    $('#panelMaybeB > div').appendTo('#panelB');
+	    $('#panelMaybeB > span').appendTo('#panelB');
 	}
 	var Img = function (_a) {
 	    var imgId = _a[0], dist = _a[1];
@@ -118,7 +118,7 @@
 	    }, []);
 	    var color = HSVtoRGB(dist * 0.333, 1, 1);
 	    var p = pie(dist, color);
-	    return h('div', { style: { display: "inline" } }, [img, p]);
+	    return h('span', { style: {} }, [img, p]);
 	};
 	function Panel(id, style, idDists, title) {
 	    var o1 = idDists.map(Img);
