@@ -85,7 +85,7 @@
 	        var s = SimilarResponse2State(ret);
 	        var u = ui(s);
 	        var cs = document.body.children;
-	        document.body.replaceChild(create(u), cs[cs.length - 1]);
+	        document.body.replaceChild(create(u), $('#main')[0]);
 	        InitSortable();
 	        $("#spinner").hide();
 	        if (deploy) {
@@ -203,7 +203,7 @@
 	    var c2 = { colSpan: 2 };
 	    var c3 = { colSpan: 3 };
 	    var c4 = { colSpan: 4 };
-	    return h('table', [[VText('Samples')].mapDIVp(h2p).mapTDp(c4).TR,
+	    return h('table#main', [[VText('Samples')].mapDIVp(h2p).mapTDp(c4).TR,
 	        [ps].mapTDp(c4).TR,
 	        [VText('A').DIVp(h2p), VText(""), VText('B').DIVp(h2p), [btn, btnDeploy]].mapTD.TR,
 	        ,

@@ -64,7 +64,7 @@ function sendSimilar(deploy: boolean){
         let s = SimilarResponse2State(ret)
         let u = ui(s)
         let cs = document.body.children
-        document.body.replaceChild(create(u), cs[cs.length-1])
+        document.body.replaceChild(create(u), $('#main')[0])
         InitSortable()
         $("#spinner").hide()
         if(deploy){
@@ -213,7 +213,7 @@ function ui (s: State){
     let c3 = {colSpan: 3}
     let c4 = {colSpan: 4}
 
-    return h('table',
+    return h('table#main',
         [ ([VText('Samples')] as any).mapDIVp(h2p).mapTDp(c4).TR
         , ([ps] as any).mapTDp(c4).TR
         , ([VText('A').DIVp(h2p), VText(""), VText('B').DIVp(h2p), [btn, btnDeploy]] as any).mapTD.TR,
