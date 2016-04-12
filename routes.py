@@ -332,14 +332,21 @@ def embedFolder():
     dataset = mldb.create_dataset(dataset_config)
     now = datetime.datetime.now()
 
+    limit = -1
+    if "limit" in payload:
+        limit = payload["limit"]
+
+    if "folder" not in payload:
+        raise Exception("Folder must be specified!")
+
     # if we're loading images from disk
-    num_images = 0
-    if "folder" in payload:
-        for filename in os.listdir(payload["folder"]):
-            mldb.log(" .... " + filename)
-            num_images+=1
-            dataset.record_row(filename.split(".")[0],
-                                [["location", os.path.join(payload["folder"], filename), now]])
+    for num_images, filename in enumerate(os.listdir(payload["folder"])):
+        if limit>0 and num_images+1 > limit:
+            break
+
+        mldb.log(" .%d : %s" % (num_images, filename))
+        dataset.record_row(filename.split(".")[0],
+                            [["location", os.path.join(payload["folder"], filename), now]])
     dataset.commit()
 
     # now embed images
@@ -361,7 +368,7 @@ def embedFolder():
     rtnVal = {
         "source": payload["folder"],
         "name": payload["name"],
-        "num_images": num_images
+        "num_images": num_images + 1
     }
     return (rtnVal, 200)
 
