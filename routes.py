@@ -376,23 +376,28 @@ def embedFolder():
 def persistEmbedding():
     payload = json.loads(mldb.plugin.rest_params.payload)
 
+    outputFolder = os.path.join(mldb.plugin.get_plugin_dir(), "cache")
+    if not os.path.exists(outputFolder):
+        os.makedirs(outputFolder)
+
     mldb2.put("/v1/procedures/<id>", {
         "type": "export.csv",
         "params": {
             "exportData": "select rowName() as rowName, * from %s_%s " % (EMBEDDING_DATASET, payload["name"]),
-            "dataFileUrl": "file://"+os.path.join(mldb.plugin.get_plugin_dir(),\
-                                                  "cache", "dataset_creator_embedding_%s.csv.gz" % payload["name"]),
+            "dataFileUrl": "file://"+os.path.join(outputFolder,
+                                                  "dataset_creator_embedding_%s.csv.gz" % payload["name"]),
             "headers": True,
             "runOnCreation": True
         }
     })
 
+
     mldb2.put("/v1/procedures/<id>", {
         "type": "export.csv",
         "params": {
             "exportData": "select rowName() as rowName, * from images_%s" % payload["name"],
-            "dataFileUrl": "file://"+os.path.join(mldb.plugin.get_plugin_dir(),\
-                                                  "cache", "dataset_creator_images_%s.csv.gz" % payload["name"]),
+            "dataFileUrl": "file://"+os.path.join(outputFolder,
+                                                  "dataset_creator_images_%s.csv.gz" % payload["name"]),
             "headers": True,
             "runOnCreation": True
         }
