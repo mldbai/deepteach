@@ -59,10 +59,11 @@ def loadCollection(collection, prefix, limit=0):
                 },
             "select": "* EXCLUDING(rowName)",
             "named": "rowName",
-            "where": "rowName IN (select rowName() from dataset_creator_images_%s.csv.gz" % collection,
+            "where": "rowName IN (select rowName() from %s)" % collection,
             "runOnCreation": True
         }
     })
+    mldb.log(rez)
 
 
 # load built-in collections
