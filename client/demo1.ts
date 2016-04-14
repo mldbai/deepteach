@@ -109,7 +109,7 @@ const Img = ([imgId, dist]: IdDist) => {
         src: `${prefix}/${dataset}/${imgId}.jpg`,
         id: imgId,
         style: {
-            margin: "4px", borderRadius: "25%",
+            margin: "4px", borderRadius: "25%", maxWidth: "200px",
         }
     } ,[] )
     let color = HSVtoRGB(dist * 0.333, 1, 1)
