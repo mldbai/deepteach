@@ -113,7 +113,7 @@
 	        src: prefix + "/" + dataset + "/" + imgId + ".jpg",
 	        id: imgId,
 	        style: {
-	            margin: "4px", borderRadius: "25%"
+                margin: "4px", borderRadius: "25%", maxWidth: "200px"
 	        }
 	    }, []);
 	    var color = HSVtoRGB(dist * 0.333, 1, 1);

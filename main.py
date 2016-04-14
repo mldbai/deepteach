@@ -34,32 +34,51 @@ filePrefix = "https://s3.amazonaws.com/public.mldb.ai/datasets/dataset-builder/c
 
 ###
 # Reload cached embeddings
-for collection in ["recipe", "transport", "pets", "realestate"]:
+
+def loadCollection(collection, prefix, limit=0):
+    mldb.log(" >> Loading collection '%s', prefix:%s limit:%d" % (collection, prefix, limit))
+    mldb.perform("PUT", "/v1/procedures/embedder", [], {
+        "type": "import.text",
+        "params": {
+            "dataFileUrl": join(prefix, "dataset_creator_images_%s.csv.gz" % collection),
+            "select": "* EXCLUDING(rowName)",
+            "named": "rowName",
+            "limit": limit,
+            "outputDataset": {"id": collection, "type": "sparse.mutable" },
+            "runOnCreation": True
+        }
+    })
+
     rez = mldb.perform("PUT", "/v1/procedures/embedded_images", [], {
         "type": "import.text",
         "params": {
-            "dataFileUrl": join(filePrefix, "dataset_creator_embedding_%s.csv.gz" % collection),
+            "dataFileUrl": join(prefix, "dataset_creator_embedding_%s.csv.gz" % collection),
             "outputDataset": {
                     "id": "embedded_images_%s" % collection,
                     "type": "embedding"
                 },
             "select": "* EXCLUDING(rowName)",
             "named": "rowName",
+            "where": "rowName IN (select rowName() from dataset_creator_images_%s.csv.gz" % collection,
             "runOnCreation": True
         }
     })
 
-    mldb.log(rez)
 
-    mldb.perform("PUT", "/v1/procedures/embedder", [], {
-        "type": "import.text",
-        "params": {
-            "dataFileUrl": join(filePrefix, "dataset_creator_images_%s.csv.gz" % collection),
-            "select": "* EXCLUDING(rowName)",
-            "named": "rowName",
-            "outputDataset": {"id": collection, "type": "sparse.mutable" },
-            "runOnCreation": True
-        }
-    })
+# load built-in collections
+for collection in ["recipe", "transport", "pets", "realestate"]:
+    loadCollection(collection, filePrefix)
 
+# load any extra collections specified at plugin creation
+if "extraCollections" in mldb.plugin.args:
+    mldb.log(" >> Loading extra collections")
+    for coll in mldb.plugin.args["extraCollections"]:
+        if "name" not in coll:
+            raise Exception("Key 'name' must be specified for extra collection")
+
+        loadCollection(coll["name"], \
+                       coll["prefix"] if "prefix" in coll else filePrefix,
+                       coll["limit"] if "limit" in coll else 0)
+
+mldb.log("Ready")
 
