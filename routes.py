@@ -118,7 +118,7 @@ def getPrediction():
                 "threshold": min_score_for_pos,
                 "max": maxScore
             },
-            "prediction": "A" if score >= min_score_for_pos else "B"
+            "prediction": "A" if score >= min_score_for_pos * 0.9 else "B"
         }
 
 
@@ -178,10 +178,11 @@ def getSimilar(cls_func_name="explorator_cls"):
         already_added.add(row)
 
     # now add all remaining examples as low weight negative examples
-    query = "SELECT rowName() FROM %s WHERE NOT (rowName() IN ('%s'))" % (embeddingDataset, "','".join(list(already_added)))
-    for line in mldb2.query(query)[1:]:
-        dataset.record_row(line[0], [["label", 1, now], ["weight", 0.001, now]])
-        already_added.add(line[0])
+    if not doDeploy:
+        query = "SELECT rowName() FROM %s WHERE NOT (rowName() IN ('%s'))" % (embeddingDataset, "','".join(list(already_added)))
+        for line in mldb2.query(query)[1:]:
+            dataset.record_row(line[0], [["label", 1, now], ["weight", 0.001, now]])
+            already_added.add(line[0])
 
     dataset.commit()
 
