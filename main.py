@@ -35,7 +35,7 @@ filePrefix = "https://s3.amazonaws.com/public.mldb.ai/datasets/dataset-builder/c
 ###
 # Reload cached embeddings
 
-def loadCollection(collection, prefix, limit=0):
+def loadCollection(collection, prefix, limit=-1):
     mldb.log(" >> Loading collection '%s', prefix:%s limit:%d" % (collection, prefix, limit))
     mldb.perform("PUT", "/v1/procedures/embedder", [], {
         "type": "import.text",
@@ -79,7 +79,7 @@ if "extraCollections" in mldb.plugin.args:
 
         loadCollection(coll["name"], \
                        coll["prefix"] if "prefix" in coll else filePrefix,
-                       coll["limit"] if "limit" in coll else 0)
+                       coll["limit"] if "limit" in coll else -1)
 
 mldb.log("Ready")
 
