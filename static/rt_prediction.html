@@ -118,6 +118,10 @@
 <script>
 $( document ).ready(function() {
 
+    function endsWith(str, suffix) {
+        return str.indexOf(suffix, str.length - suffix.length) !== -1;
+    }
+
     $("#sampleAdiv").hide();
     $("#sampleBdiv").hide();
     $("#predictionPannel").hide();
@@ -137,22 +141,29 @@ $( document ).ready(function() {
     if(did == null || did == ''){
       $("#spinner").show()
     } else{
-
       $("#spinner").hide()
     }
 
     $("#submitButton").click(function() {
+
+        url = $('#imageUrl').val();
+        if(!url.endsWith(".jpg") && !url.endsWith(".jpeg")) {
+            alert("Real-time prediction only supports JPEG images");
+            return false;
+        }
+
         $.ajax({
           type: "POST",
           url: "../prediction",
           data: {
                 "deploy_id": $('#deployId').val(),
-                "image_url": $('#imageUrl').val()
+                "image_url": url
             },
           dataType: "json",
             error: (function(msg) {
                 console.log(msg);
-                alert( "error " + msg);
+                alert( "An exception occured :(\n" + 
+                    JSON.stringify(JSON.parse(msg.responseText), null, 2));
               }),
           success: function( data ) {
                 // {"example_image":{"A":"castle-3","B":"cabin-2"},"prediction":["B",0]}
@@ -179,10 +190,10 @@ $( document ).ready(function() {
                 };
 
                 for(var i=0; i<data["example_image"]["A"].length; i++) {
-                    $("#sampleA").append("<img src=\""+ imagePath(data["example_image"]["A"][i]) +"\" style=\"padding-left:5px\">");
+                    $("#sampleA").append("<img src=\""+ imagePath(data["example_image"]["A"][i]) +"\" style=\"padding-left:5px;max-width: 200px\">");
                 }
                 for(var i=0; i<data["example_image"]["B"].length; i++) {
-                    $("#sampleB").append("<img src=\""+ imagePath(data["example_image"]["B"][i]) +"\" style=\"padding-left:5px\">");
+                    $("#sampleB").append("<img src=\""+ imagePath(data["example_image"]["B"][i]) +"\" style=\"padding-left:5px;max-width:200px\">");
                 }
 
                 $("#distA").append("<p>"+data["similarity"]+"</p>");

@@ -239,7 +239,7 @@ def getSimilar(cls_func_name="explorator_cls"):
     del scores[0]   # remove header
     scores_dict = {v[0]: v[1] for v in scores}
 
-    mldb.log(scores)
+    #mldb.log(scores)
 
     if doDeploy:
         mldb2.put("/v1/procedures/transformer", {
