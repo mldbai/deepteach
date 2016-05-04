@@ -189,10 +189,10 @@
 	    //This modify array's prototype.
 	    addTags(Array.prototype);
 	    var aStyle = { maxHeight: "500px", overflow: "auto", marginBottom: "15px", minHeight: "100px" };
-	    var pa = Panel('panelA', pStyle, s.a, 'A');
-	    var pb = Panel('panelB', pStyle, s.b, 'B');
-	    var pa1 = Panel('panelMaybeA', pStyle, s.maybeA, 'Maybe A');
-	    var pb1 = Panel('panelMaybeB', pStyle, s.maybeB, 'Maybe B');
+	    var pa = Panel('panelA', pStyle, s.a, 'Target');
+	    var pb = Panel('panelB', pStyle, s.b, 'Not Target');
+	    var pa1 = Panel('panelMaybeA', pStyle, s.maybeA, 'Maybe Target');
+	    var pb1 = Panel('panelMaybeB', pStyle, s.maybeB, 'Probably Not Target');
 	    var ps = Panel('panelSamples', sampleStyle, s.samples, 'Samples');
 	    //let pi = Panel('panelI', pStyle, s.ignore, 'Ingore')
 	    var btn = addTags(h('button', { "onclick": onClick, className: 'btn btn-primary', style: btnStyle }, "Find Similar"));
@@ -205,10 +205,10 @@
 	    var c4 = { colSpan: 4 };
 	    return h('table#main', [[VText('Samples')].mapDIVp(h2p).mapTDp(c4).TR,
 	        [ps].mapTDp(c4).TR,
-	        [VText('A').DIVp(h2p), VText(""), VText('B').DIVp(h2p), [btn, btnDeploy]].mapTD.TR,
+	        [VText('Target').DIVp(h2p), VText(""), VText('Not Target').DIVp(h2p), [btn, btnDeploy]].mapTD.TR,
 	        ,
 	        [pa, pb].mapTDp(c2).TR,
-	        [VText('Maybe A').DIVp(h2p), btn2, VText('Maybe B').DIVp(h2p), btn3].mapTD.TR,
+	        [VText('Maybe Target').DIVp(h2p), btn2, VText('Maybe Not Target').DIVp(h2p), btn3].mapTD.TR,
 	        ,
 	        [pa1, pb1].mapTDp(c2).TR
 	    ]);
