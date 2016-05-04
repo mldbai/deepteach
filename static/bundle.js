@@ -208,7 +208,7 @@
 	        [VText('Target').DIVp(h2p), VText(""), VText('Not Target').DIVp(h2p), [btn, btnDeploy]].mapTD.TR,
 	        ,
 	        [pa, pb].mapTDp(c2).TR,
-	        [VText('Maybe Target').DIVp(h2p), btn2, VText('Maybe Not Target').DIVp(h2p), btn3].mapTD.TR,
+	        [VText('Maybe Target').DIVp(h2p), btn2, VText('Probably Not Target').DIVp(h2p), btn3].mapTD.TR,
 	        ,
 	        [pa1, pb1].mapTDp(c2).TR
 	    ]);

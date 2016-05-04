@@ -69,7 +69,7 @@
   <div class="panel-body">
 <table width="80%" border="0" cellpadding="10">
     <tr>
-        <td><b>Similarity with A</b></td>
+        <td><b>Similarity with Target</b></td>
         <td colspan="2">
             <br>
             <!--
@@ -94,7 +94,7 @@
         <td colspan="2">
             <div class="panel panel-success" id="predApannel">
               <div class="panel-heading">
-                <h3 class="panel-title">The prediction is A</h3>
+                <h3 class="panel-title">The prediction is 'Target'</h3>
               </div>
               <div class="panel-body" id="predA">
               </div>
@@ -102,7 +102,7 @@
 
             <div class="panel panel-danger" id="predBpannel">
               <div class="panel-heading">
-                <h3 class="panel-title">The prediction is B</h3>
+                <h3 class="panel-title">The prediction is 'Not Target'</h3>
               </div>
               <div class="panel-body" id="predB">
               </div>
@@ -211,6 +211,10 @@ $( document ).ready(function() {
                     redSim = data["similarity"]["score"] / data["similarity"]["max"];
                 }
                 */
+                
+                // use probabilizer
+                //sim = data["similarity"]["prob"]; 
+                
                 sim = data["similarity"]["score"] / data["similarity"]["max"];
 
 
