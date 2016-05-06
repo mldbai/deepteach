@@ -35,12 +35,15 @@
   <div class="form-group">
     <div class="col-sm-offset-2 col-sm-10">
         <button type="button" id="submitButton" class="btn btn-primary">Classify</button>
+        <img src="gears.gif" id="gears">
     </div>
     <br><br>
+    <button type="button" class="close" id="showReminder" aria-label="Show reminder"><span class="caret"></span></button>
   </div>
 
     <div class="form-group" id="sampleAdiv">
-    <label for="sampleA" class="col-sm-2 control-label">Sample training examples for A</label>
+    <button type="button" class="close" id="hideReminder" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <label for="sampleA" class="col-sm-2 control-label">Sample training examples for 'Target'</label>
     <div class="col-sm-10">
        <div class="well panel-success" id="sampleA">
 
@@ -48,7 +51,7 @@
     </div>
   </div>
     <div class="form-group" id="sampleBdiv">
-    <label for="sampleB" class="col-sm-2 control-label">Sample training examples for B</label>
+    <label for="sampleB" class="col-sm-2 control-label">Sample training examples for 'Not Target'</label>
     <div class="col-sm-10">
        <div class="well panel-danger" id="sampleB">
 
@@ -118,13 +121,11 @@
 <script>
 $( document ).ready(function() {
 
-    function endsWith(str, suffix) {
-        return str.indexOf(suffix, str.length - suffix.length) !== -1;
-    }
-
+    $("#gears").hide();
     $("#sampleAdiv").hide();
     $("#sampleBdiv").hide();
     $("#predictionPannel").hide();
+    $("#showReminder").hide();
 
     function getParameterByName(name, url) {
         if (!url) url = window.location.href;
@@ -144,14 +145,37 @@ $( document ).ready(function() {
       $("#spinner").hide()
     }
 
-    $("#submitButton").click(function() {
-
-        url = $('#imageUrl').val();
-        if(!url.endsWith(".jpg") && !url.endsWith(".jpeg")) {
-            alert("Real-time prediction only supports JPEG images");
-            return false;
+    $.toggleSubmit = function(enable) {
+        if(enable) {
+            $("#gears").hide();
+            $("#submitButton").text('Classify');
+            $("#submitButton").prop('disabled', false);
         }
+        else {
+            $("#gears").show();
+            $("#submitButton").text('Processing...');
+            $("#submitButton").prop('disabled', true);
+        }
+    }
 
+    $.keepSampleHidden = false;
+    $("#hideReminder").click(function() {
+        $.keepSampleHidden = true;
+        $("#sampleAdiv").hide();
+        $("#sampleBdiv").hide();
+        $("#showReminder").show();
+    });
+
+    $("#showReminder").click(function() {
+        $.keepSampleHidden = false;
+        $("#sampleAdiv").show();
+        $("#sampleBdiv").show();
+        $("#showReminder").hide();
+    });
+
+    $("#submitButton").click(function() {
+        $.toggleSubmit(false);
+        url = $('#imageUrl').val();
         $.ajax({
           type: "POST",
           url: "../prediction",
@@ -160,16 +184,20 @@ $( document ).ready(function() {
                 "image_url": url
             },
           dataType: "json",
-            error: (function(msg) {
-                console.log(msg);
-                alert( "An exception occured :(\n" + 
-                    JSON.stringify(JSON.parse(msg.responseText), null, 2));
-              }),
+          error: (function(msg) {
+            $.toggleSubmit(true);
+            console.log(msg);
+            alert( "An exception occured :(\n" +
+                JSON.stringify(JSON.parse(msg.responseText), null, 2));
+          }),
           success: function( data ) {
+                $.toggleSubmit(true);
                 // {"example_image":{"A":"castle-3","B":"cabin-2"},"prediction":["B",0]}
 
-                $("#sampleAdiv").show();
-                $("#sampleBdiv").show();
+                if(!$.keepSampleHidden) {
+                    $("#sampleAdiv").show();
+                    $("#sampleBdiv").show();
+                }
                 $("#predictionPannel").show();
 
                 var prefix = "https://s3.amazonaws.com/public.mldb.ai/datasets/dataset-builder/images/";
@@ -211,10 +239,10 @@ $( document ).ready(function() {
                     redSim = data["similarity"]["score"] / data["similarity"]["max"];
                 }
                 */
-                
+
                 // use probabilizer
-                //sim = data["similarity"]["prob"]; 
-                
+                //sim = data["similarity"]["prob"];
+
                 sim = data["similarity"]["score"] / data["similarity"]["max"];
 
 

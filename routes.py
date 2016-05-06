@@ -62,15 +62,42 @@ def getPrediction():
 
     mldb.log(input_data)
 
-    score_query_rez = mldb2.query("""
-            SELECT explorator_cls_%s(
-                            {
-                                features: {*}
-                            }) as scores
-            FROM (
-                SELECT inception({url: '%s'}) as *
-            )
-        """ % (input_data["deploy_id"], input_data["image_url"]))
+    import urllib2
+    try:
+        response = urllib2.urlopen(input_data["image_url"])
+        if(response.getcode() != 200):
+            return ("Error opening image: %s. URL: %s" % (str(response.info()), input_data["image_url"]), 400)
+    except Exception as e:
+        return ("Error opening image: %s. URL: %s" % (str(e), input_data["image_url"]), 400)
+
+    unableToGetMimeType = False
+    if 'Content-type' not in response.info():
+        unableToGetMimeType = True
+        mldb.log(str(response.info()))
+        #return ("Real-time prediction only supports JPEG images. Unable to determine mine type", 400)
+    else:
+        mime = response.info()['Content-type']
+        mldb.log(str(mime))
+        if not mime.endswith("jpeg"):
+            return ("Real-time prediction only supports JPEG images. Mime type was '%s'" % mime, 400)
+
+    try:
+        score_query_rez = mldb2.query("""
+                SELECT explorator_cls_%s(
+                                {
+                                    features: {*}
+                                }) as scores
+                FROM (
+                    SELECT inception({url: '%s'}) as *
+                )
+            """ % (input_data["deploy_id"], input_data["image_url"]))
+    except Exception as e:
+        if unableToGetMimeType:
+            return ("Error when trying to score image. Could not determine mime type. Probably not a JPEG image", 400)
+
+        return ("Error scoring image: %s. URL: %s" % (str(e), input_data["image_url"]), 400)
+
+
 
     mldb.log(score_query_rez)
     score = score_query_rez[1][1]
