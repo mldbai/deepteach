@@ -65,6 +65,13 @@ def loadCollection(collection, prefix, limit=-1):
     })
     mldb.log(rez)
 
+    mldb.perform("PUT", "/v1/functions/nearest_%s" % collection, [], {
+        "type": "embedding.neighbors",
+        "params": {
+            "dataset": "embedded_images_%s" % collection
+        }
+    })
+
 
 # load built-in collections
 for collection in ["recipe", "transport", "pets", "realestate"]:
