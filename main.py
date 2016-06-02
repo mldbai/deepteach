@@ -60,7 +60,8 @@ def loadCollection(collection, prefix, limit=-1):
             "select": "* EXCLUDING(rowName)",
             "named": "rowName",
             "where": "rowName IN (select rowName() from %s)" % collection,
-            "runOnCreation": True
+            "runOnCreation": True,
+            "structuredColumnNames": True
         }
     })
     mldb.log(rez)
