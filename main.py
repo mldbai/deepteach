@@ -60,10 +60,18 @@ def loadCollection(collection, prefix, limit=-1):
             "select": "* EXCLUDING(rowName)",
             "named": "rowName",
             "where": "rowName IN (select rowName() from %s)" % collection,
-            "runOnCreation": True
+            "runOnCreation": True,
+            "structuredColumnNames": True
         }
     })
     mldb.log(rez)
+
+    mldb.perform("PUT", "/v1/functions/nearest_%s" % collection, [], {
+        "type": "embedding.neighbors",
+        "params": {
+            "dataset": "embedded_images_%s" % collection
+        }
+    })
 
 
 # load built-in collections

@@ -189,13 +189,13 @@ def getSimilar(cls_func_name="explorator_cls"):
 
             # if it's the positive group, look at nearest neighbhours to add extra
             # labels in positive class in case we don't have enough
-            if lbl == 0:
+            if lbl == 0 and not doDeploy:
                 # will return list of ["slid","596e1ca6687cd301",1.9799363613128662]
-                neighbours = mldb2.get("/v1/datasets/%s/routes/rowNeighbours" % embeddingDataset,
-                                    row=img)
+                neighbours = mldb2.query("select nearest_%s({coords: '%s'})[neighbors] as *" % (datasetName, img)) 
 
-                for nName, nId, nDist in neighbours.json():
+                for nName in neighbours[1][1:]:
                     to_add.append((nName, [["label", lbl, now], ["weight", 0.25, now]]))
+
 
     # add the positive nearest neighbours if they were't added as
     # explicit negative examples
@@ -206,7 +206,8 @@ def getSimilar(cls_func_name="explorator_cls"):
 
     # now add all remaining examples as low weight negative examples
     if not doDeploy:
-        query = "SELECT rowName() FROM %s WHERE NOT (rowName() IN ('%s'))" % (embeddingDataset, "','".join(list(already_added)))
+        query = "SELECT rowName() FROM %s WHERE NOT (rowName() IN ('%s'))" % \
+                            (embeddingDataset, "','".join(list(already_added)))
         for line in mldb2.query(query)[1:]:
             dataset.record_row(line[0], [["label", 1, now], ["weight", 0.001, now]])
             already_added.add(line[0])
