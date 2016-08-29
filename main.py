@@ -4,9 +4,12 @@
 # Copyright (c) 2016 Datacratic Inc. All rights reserved.
 #
 
+from os.path import join
+
 mldb.log("Staring plugin init...")
 
-from os.path import join
+# load wrapper so that mldb object behaves like pymldb
+mldb = mldb_wrapper.wrap(mldb)
 
 # expose route to serve UI
 mldb.plugin.serve_static_folder("/static", "static")
@@ -14,14 +17,14 @@ mldb.plugin.serve_static_folder("/static", "static")
 
 ### 
 # Load embedding code for rt predictions
-inceptionUrl = "https://s3.amazonaws.com/public.mldb.ai/models/inception_dec_2015.zip"
+inceptionUrl = "https://s3.amazonaws.com/public-mldb-ai/models/inception_dec_2015.zip"
 
-mldb.perform("PUT", '/v1/functions/fetch', [], {
+mldb.put('/v1/functions/fetch', {
     "type": 'fetcher',
     "params": {}
 })
 
-mldb.perform("PUT", '/v1/functions/inception', [], {
+mldb.put('/v1/functions/inception', {
     "type": 'tensorflow.graph',
     "params": {
         "modelFileUrl": 'archive+' + inceptionUrl + '#tensorflow_inception_graph.pb',
@@ -30,26 +33,24 @@ mldb.perform("PUT", '/v1/functions/inception', [], {
     }
 })
 
-filePrefix = "https://s3.amazonaws.com/public.mldb.ai/datasets/dataset-builder/cache"
+filePrefix = "https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/cache"
 
 ###
 # Reload cached embeddings
-
 def loadCollection(collection, prefix, limit=-1):
     mldb.log(" >> Loading collection '%s', prefix:%s limit:%d" % (collection, prefix, limit))
-    mldb.perform("PUT", "/v1/procedures/embedder", [], {
+    mldb.put("/v1/procedures/embedder", {
         "type": "import.text",
         "params": {
             "dataFileUrl": join(prefix, "dataset_creator_images_%s.csv.gz" % collection),
             "select": "* EXCLUDING(rowName)",
             "named": "rowName",
             "limit": limit,
-            "outputDataset": {"id": collection, "type": "sparse.mutable" },
-            "runOnCreation": True
+            "outputDataset": {"id": collection, "type": "tabular"}
         }
     })
 
-    rez = mldb.perform("PUT", "/v1/procedures/embedded_images", [], {
+    rez = mldb.put("/v1/procedures/embedded_images", {
         "type": "import.text",
         "params": {
             "dataFileUrl": join(prefix, "dataset_creator_embedding_%s.csv.gz" % collection),
@@ -60,13 +61,13 @@ def loadCollection(collection, prefix, limit=-1):
             "select": "* EXCLUDING(rowName)",
             "named": "rowName",
             "where": "rowName IN (select rowName() from %s)" % collection,
-            "runOnCreation": True,
             "structuredColumnNames": True
         }
     })
     mldb.log(rez)
 
-    mldb.perform("PUT", "/v1/functions/nearest_%s" % collection, [], {
+    # create nearest neighbour function. this will allow us to quickly find similar images
+    mldb.put("/v1/functions/nearest_%s" % collection, {
         "type": "embedding.neighbors",
         "params": {
             "dataset": "embedded_images_%s" % collection

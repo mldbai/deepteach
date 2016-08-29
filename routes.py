@@ -253,8 +253,7 @@ def getSimilar(cls_func_name="explorator_cls"):
                 }
             },
             "mode": "boolean",
-            "functionName": cls_func_name,
-            "runOnCreation": True
+            "functionName": cls_func_name
         }
     })
 
@@ -284,8 +283,7 @@ def getSimilar(cls_func_name="explorator_cls"):
                         ) as score
                     ) ON score.rowName() = training_labels.rowName()
                 """ % (datasetName, run_id, cls_func_name, embeddingDataset),
-                "outputDataset": "predictions_%s" % run_id,
-                "runOnCreation": True
+                "outputDataset": "predictions_%s" % run_id
             }
         })
 
@@ -342,7 +340,8 @@ def getSimilar(cls_func_name="explorator_cls"):
 
 
 
-
+######
+# The following is to embed images in a folder
 def embedFolder():
     payload = json.loads(mldb.plugin.rest_params.payload)
 
@@ -389,8 +388,7 @@ def embedFolder():
             "outputDataset": {
                     "id": EMBEDDING_DATASET + "_" + payload["name"],
                     "type": "embedding"
-                },
-            "runOnCreation": True
+                }
         }
     })
 
@@ -415,8 +413,7 @@ def persistEmbedding():
             "exportData": "select rowName() as rowName, * from %s_%s " % (EMBEDDING_DATASET, payload["name"]),
             "dataFileUrl": "file://"+os.path.join(outputFolder,
                                                   "dataset_creator_embedding_%s.csv.gz" % payload["name"]),
-            "headers": True,
-            "runOnCreation": True
+            "headers": True
         }
     })
 
@@ -427,8 +424,7 @@ def persistEmbedding():
             "exportData": "select rowName() as rowName, * from images_%s" % payload["name"],
             "dataFileUrl": "file://"+os.path.join(outputFolder,
                                                   "dataset_creator_images_%s.csv.gz" % payload["name"]),
-            "headers": True,
-            "runOnCreation": True
+            "headers": True
         }
     })
 
