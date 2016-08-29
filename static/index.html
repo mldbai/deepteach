@@ -1,4 +1,8 @@
 <!DOCTYPE html>
+<!--
+    Francois Maillet, 2016-02-25
+    Copyright (c) 2016 Datacratic Inc. All rights reserved.
+-->
 <html lang="en">
 <head>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
@@ -95,8 +99,12 @@
                  <input type="file" id="filesToUpload" multiple>
                  <p class="help-block">You can only upload JPEG images.</p>
             </div>
-            <button type="button" id="uploadButton" class="btn btn-primary" onclick="$.uploadFiles()">Upload</button>
+            <button type="button" id="uploadButton" class="btn btn-primary" onclick="$.uploadFiles()">
+                <span class="glyphicon glyphicon-upload"></span>
+                Upload
+            </button>
             <img src="gears.gif" id="gears">
+            <span id="status"></span>
         </p>
       </div>
     </div>
@@ -135,6 +143,7 @@ $( document ).ready(function() {
         $("#gears").show();
         $("#uploadButton").text('Processing...');
         $("#uploadButton").prop('disabled', true);
+        $("#status").html('Loading data locally...');
 
 
         var num_images = files.length;
@@ -169,7 +178,7 @@ $( document ).ready(function() {
             // we're ready to go! clear timeout
             clearTimeout(waitTillCanUpload);
 
-            console.log("sending ajax");
+            $("#status").html('Uploading and processing images... This can take a while :)');
             $.ajax({
                 method: "POST",
                 url: window.location.href.split("/").slice(0, -2).join("/") + "/createDataset",
@@ -179,12 +188,18 @@ $( document ).ready(function() {
                     "limit": $('#imageLimit').val()
                 }),
                 dataType: "json",
-                error: function(e) { alert('an error occured!'); },
+                error: function(msg) {
+                    alert( "An exception occured :(\n" +
+                        JSON.stringify(JSON.parse(msg.responseText), null, 2));
+                    $("#status").html('An error occured');
+                    $("#uploadButton").prop('disabled', false);
+                    $("#gears").hide();
+                },
                 success: function(e) {
                     window.location.href = window.location.href.split("/").slice(0, -1).join("/") + "/dataset_builder.html?"+
                             "prefix="+encodeURIComponent(window.location.href.split("/").slice(0, -1).join("/"))+
                             "&dataset=" + e.name;
-                }
+                },
             });
         }
 

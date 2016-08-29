@@ -351,7 +351,7 @@ def createDataset():
     unique_id = str(binascii.hexlify(os.urandom(16)))
     payload = json.loads(mldb.plugin.rest_params.payload)
 
-    collectionName = payload['dataset'].replace(".", "").replace("/", "").replace("-", "_") + "_" + unique_id
+    collectionName = "dataset_" + payload['dataset'].replace(".", "").replace("/", "").replace("-", "_") + "_" + unique_id
     collectionFolder = os.path.join(mldb.plugin.get_plugin_dir(), "static", collectionName)
     if not os.path.exists(collectionFolder):
         os.mkdir(collectionFolder)
