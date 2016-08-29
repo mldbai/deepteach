@@ -326,7 +326,6 @@ def getSimilar(cls_func_name="explorator_cls"):
         mldb2.delete(toDel)
 
 
-
     rtn_dict = {
         "a": {
             "prev": grpA,
@@ -348,9 +347,8 @@ def getSimilar(cls_func_name="explorator_cls"):
 
 def createDataset():
     import base64, re, os
-    
-    unique_id = str(binascii.hexlify(os.urandom(16)))
 
+    unique_id = str(binascii.hexlify(os.urandom(16)))
     payload = json.loads(mldb.plugin.rest_params.payload)
 
     collectionName = payload['dataset'].replace(".", "").replace("/", "").replace("-", "_") + "_" + unique_id
