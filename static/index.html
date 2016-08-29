@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
 <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -22,7 +22,7 @@
       <div class="caption">
         <h3>Real estate</h3>
         <p>
-            <a href="#" class="btn btn-primary" role="button" id="realestate">Use collection</a>
+            <a href="#" class="btn btn-primary builtin" role="button" id="realestate">Use collection</a>
         </p>
       </div>
     </div>
@@ -36,7 +36,7 @@
         </p>
       <div class="caption">
         <h3>Recipes</h3>
-        <p><a href="#" class="btn btn-primary" role="button" id="recipe">Use collection</a>
+        <p><a href="#" class="btn btn-primary builtin" role="button" id="recipe">Use collection</a>
         <br><br>
         </p>
       </div>
@@ -52,7 +52,7 @@
         </p>
       <div class="caption">
         <h3>Pets</h3>
-        <p><a href="#" class="btn btn-primary" role="button" id="pets">Use collection</a>
+        <p><a href="#" class="btn btn-primary builtin" role="button" id="pets">Use collection</a>
 <br><br>
         </p>
       </div>
@@ -67,12 +67,34 @@
         </p>
       <div class="caption">
         <h3>Transportation</h3>
-        <p><a href="#" class="btn btn-primary" role="button" id="transport">Use collection</a>
+        <p><a href="#" class="btn btn-primary builtin" role="button" id="transport">Use collection</a>
         </p>
       </div>
     </div>
   </div>
 
+</div>
+
+<div class="row">
+  <div class="col-sm-12 col-md-8">
+    <div class="thumbnail well">
+      <div class="caption">
+        <h3>Upload your own images!</h3>
+        <form>
+            <div class="form-group">
+                <label for="collectionName">Name</label>
+                <input class="form-control" id="collectionName" placeholder="Name">
+            </div>
+             <div class="form-group">
+                 <label for="filesToUpload">File input</label>
+                 <input type="file" id="filesToUpload" multiple>
+                 <p class="help-block">You can only upload JPEG images.</p>
+            </div>
+            <a href="#" class="btn btn-primary" role="button" onclick="$.uploadFiles()">Upload</a>
+        </p>
+      </div>
+    </div>
+  </div>
 </div>
 
 </div>
@@ -81,12 +103,75 @@
 imgPrefix = "https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images";
 
 $( document ).ready(function() {
-    $(".btn").click(function(x) {
+    $(".builtin").click(function(x) {
         window.location.href = window.location.href.split("/").slice(0, -1).join("/") + "/dataset_builder.html?"+
                 "prefix=" + encodeURIComponent(imgPrefix) +
                 "&dataset=" + x.target.id;
     });
 
+
+    $.uploadFiles = function(){
+        var preview = document.querySelector('img'); //selects the query named img
+        var files    = document.querySelector('input[type=file]').files; //sames as here
+
+        if(files.length < 2) {
+            alert("Must select at least 2 images!");
+            return;
+        }
+
+        if($('#collectionName').val().length == 0)
+            alert("Must give a dataset name!");
+
+
+        var num_images = files.length;
+        var image_data = [];
+
+        var reader  = new FileReader();
+        function readAndUpload(fileId, file) {
+            // Make sure the file is a jpeg
+            if (!( /\.(jpe?g)$/i.test(file.name))) {
+                console.log("skipping " + file.name + " because extension is wrong!");
+                num_images--;
+                return;
+            }
+
+            var reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function (event) {
+                var result = event.target.result;
+                image_data.push([file.name, result]);
+            }
+        }
+
+        for(var i=0; i<files.length; i++)
+            readAndUpload(i, files[i]);
+
+        var doPost = function() {
+            // if we're not done preparing, return for now
+            if(image_data.length != num_images) {
+                return;
+            }
+
+            // we're ready to go! clear timeout
+            clearTimeout(waitTillCanUpload);
+
+            console.log("sending ajax");
+            $.ajax({
+                method: "POST",
+                url: window.location.href.split("/").slice(0, -2).join("/") + "/createDataset",
+                data: JSON.stringify({ "dataset": $('#collectionName').val(), "images": image_data}),
+                dataType: "json",
+                fail: function() { alert('an error occured!'); },
+                success: function(e) {
+                    window.location.href = window.location.href.split("/").slice(0, -1).join("/") + "/dataset_builder.html?"+
+                            "prefix="+encodeURIComponent(window.location.href.split("/").slice(0, -1).join("/"))+
+                            "&dataset=" + e.name;
+                }
+            });
+        }
+
+        var waitTillCanUpload = setTimeout(doPost, 500);
+    }
 
 });
 

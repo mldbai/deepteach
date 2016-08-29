@@ -39,7 +39,7 @@ filePrefix = "https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/c
 # Reload cached embeddings
 def loadCollection(collection, prefix, limit=-1):
     mldb.log(" >> Loading collection '%s', prefix:%s limit:%d" % (collection, prefix, limit))
-    mldb.put("/v1/procedures/embedder", {
+    mldb.post("/v1/procedures", {
         "type": "import.text",
         "params": {
             "dataFileUrl": join(prefix, "dataset_creator_images_%s.csv.gz" % collection),
@@ -50,7 +50,7 @@ def loadCollection(collection, prefix, limit=-1):
         }
     })
 
-    rez = mldb.put("/v1/procedures/embedded_images", {
+    rez = mldb.post("/v1/procedures", {
         "type": "import.text",
         "params": {
             "dataFileUrl": join(prefix, "dataset_creator_embedding_%s.csv.gz" % collection),

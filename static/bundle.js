@@ -262,14 +262,22 @@
 	}();
 	function init() {
 	    var dataset = QueryString['dataset'];
+
 	    $.ajax({
-	        url: "../../../../../v1/query?q=select regex_replace(regex_replace(location, '/.*/', ''), '.jpg', '') from sample(" + dataset + ",{rows:10})&format=table&rowNames=false&headers=false"
+	        url: "../../../../../v1/query?q=select count(*) from "+dataset+"&format=table&rowNames=false&headers=false"
 	    }).done(function (rows) {
-	        var s = rows2State(rows);
-	        var u = ui(s);
-	        document.body.appendChild(create(u));
-	        InitSortable();
-	    });
+            var num_images = rows[0][0];
+            var sample_size = Math.min(num_images, 10);
+
+            $.ajax({
+                url: "../../../../../v1/query?q=select regex_replace(regex_replace(location, '/.*/', ''), '.jpg', '') from sample(" + dataset + ",{rows:"+sample_size+"})&format=table&rowNames=false&headers=false"
+            }).done(function (rows) {
+                var s = rows2State(rows);
+                var u = ui(s);
+                document.body.appendChild(create(u));
+                InitSortable();
+            });
+        });
 	}
 	exports.init = init;
 	function HSVtoRGB(h, s, v) {

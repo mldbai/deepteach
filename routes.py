@@ -293,23 +293,33 @@ def getSimilar(cls_func_name="explorator_cls"):
     grpA = [ (x, scores_dict[x])   for x in groups[0] ]
     grpB = [ (x, 1-scores_dict[x]) for x in groups[1] ]
 
+    mldb.log(len(grpA))
+    mldb.log(len(grpB))
+    mldb.log(scores)
+    mldb.log(" ====================== ")
+
+    numImgToBreak = min(10, int(len(scores) / 2))
+
     exploitA = []
     exploitB = []
     for x in scores:
-        if len(exploitA) >= 10: break
+        if len(exploitA) >= numImgToBreak: break
         if x[0] in already_added: continue
         already_added.add(x[0])
         exploitA.append(x)
 
     for x in reversed(scores):
-        if len(exploitB) >= 10: break
+        if len(exploitB) >= numImgToBreak: break
         if x[0] in already_added: continue
         already_added.add(x[0])
         exploitB.append((x[0], 1-x[1]))
 
 
+    rez = mldb2.query("select count(*) from %s" % embeddingDataset)
+    num_images = rez[1][1]
+
     new_sample = []
-    for elem in mldb2.query("select * from sample(%s, {rows:100})" % embeddingDataset)[1:]:
+    for elem in mldb2.query("select * from sample(%s, {rows:%d})" % (embeddingDataset, min(100, num_images)))[1:]:
         if elem[0] in already_added: continue
         new_sample.append([elem[0],scores_dict[elem[0]]])
 
@@ -339,24 +349,64 @@ def getSimilar(cls_func_name="explorator_cls"):
 
 
 
+def createDataset():
+    import base64, re, os
+
+    payload = json.loads(mldb.plugin.rest_params.payload)
+
+    collectionName = payload['dataset'].replace(".", "").replace("/", "")
+    collectionFolder = os.path.join(mldb.plugin.get_plugin_dir(), "static", collectionName)
+    if not os.path.exists(collectionFolder):
+        os.mkdir(collectionFolder)
+
+    # save images on disk
+    for image in payload["images"]:
+        imageName = image[0].lower().replace("/", "").replace("jpeg", "jpg")
+        writer = open(os.path.join(collectionFolder, imageName), "w")
+
+        imgstr = re.search(r'base64,(.*)', image[1]).group(1)
+        writer.write(base64.decodestring(imgstr))
+        writer.close()
+
+
+    # embed folder
+    payload = {
+        "name": collectionName,
+        "folder": collectionFolder,
+    }
+    mldb.log("calling embedding function")
+    embedFolderWithPayload(payload)
+    
+    # create nearest neighbour function. this will allow us to quickly find similar images
+    mldb2.put("/v1/functions/nearest_%s" % collectionName, {
+        "type": "embedding.neighbors",
+        "params": {
+            "dataset": "embedded_images_%s" % collectionName
+        }
+    })
+
+    return (payload, 200)
+
 
 ######
 # The following is to embed images in a folder
 def embedFolder():
     payload = json.loads(mldb.plugin.rest_params.payload)
+    embedFolderWithPayload(payload)
 
+def embedFolderWithPayload(payload):
     # create dataset with available images
     mldb.log("Creating dataset...")
 
     dataset_config = {
         'type'    : 'sparse.mutable',
-        'id'      : "images_%s" % payload["name"]
+        'id'      : payload["name"]
     }
 
     if "name" not in payload or "folder" not in payload:
         return ("missing keys!", 400)
 
-    mldb2.delete("/v1/datasets/images_" + payload["name"])
+    mldb2.delete("/v1/datasets/" + payload["name"])
     dataset = mldb.create_dataset(dataset_config)
     now = datetime.datetime.now()
 
@@ -383,12 +433,12 @@ def embedFolder():
         "params": {
             "inputData": """
                 SELECT inception({url: location}) AS *
-                FROM images_%s
+                FROM %s
             """ % payload["name"],
             "outputDataset": {
-                    "id": EMBEDDING_DATASET + "_" + payload["name"],
-                    "type": "embedding"
-                }
+                "id": EMBEDDING_DATASET + "_" + payload["name"],
+                "type": "embedding"
+            }
         }
     })
 
@@ -407,7 +457,7 @@ def persistEmbedding():
     if not os.path.exists(outputFolder):
         os.makedirs(outputFolder)
 
-    mldb2.put("/v1/procedures/<id>", {
+    mldb2.post("/v1/procedures", {
         "type": "export.csv",
         "params": {
             "exportData": "select rowName() as rowName, * from %s_%s " % (EMBEDDING_DATASET, payload["name"]),
@@ -418,10 +468,10 @@ def persistEmbedding():
     })
 
 
-    mldb2.put("/v1/procedures/<id>", {
+    mldb2.post("/v1/procedures", {
         "type": "export.csv",
         "params": {
-            "exportData": "select rowName() as rowName, * from images_%s" % payload["name"],
+            "exportData": "select rowName() as rowName, * from %s" % payload["name"],
             "dataFileUrl": "file://"+os.path.join(outputFolder,
                                                   "dataset_creator_images_%s.csv.gz" % payload["name"]),
             "headers": True
@@ -449,6 +499,8 @@ elif mldb.plugin.rest_params.verb == "POST":
         (msg, rtnCode) = persistEmbedding()
     elif mldb.plugin.rest_params.remaining == "/prediction":
         (msg, rtnCode) = getPrediction()
+    elif mldb.plugin.rest_params.remaining == "/createDataset":
+        (msg, rtnCode) = createDataset()
 
 mldb.plugin.set_return(msg, rtnCode)
 
