@@ -28,6 +28,8 @@ def preProcessData():
             deploy = True
         if elem[0] == "dataset":
             dataset = elem[1]
+        if elem[0] == "prefix":
+            prefix = elem[1]
 
     if dataset is None:
         return ("Dataset needs to be specified", 400)
@@ -46,7 +48,7 @@ def preProcessData():
         if len(groups[idx]) == 0:
             return ("Data group '%s' cannot be empty!" % name, 400)
 
-    return data, groups, deploy, dataset
+    return data, groups, deploy, dataset, prefix
 
 
 
@@ -119,13 +121,13 @@ def getPrediction():
     rez = mldb2.query("""
         SELECT * FROM merge(
             (
-                select 'A' as class, datasetName
+                select 'A' as class, datasetName, imagePrefix
                 from predictions_%s
                 where training_labels.label = 0 and training_labels.weight = 1
                 order by score.score DESC LIMIT 5
             ),
             (
-                select 'B' as class, datasetName
+                select 'B' as class, datasetName, imagePrefix
                 from predictions_%s
                 where training_labels.label = 1
                 order by score.score ASC LIMIT 5
@@ -135,7 +137,7 @@ def getPrediction():
 
     example_images = {"A": [], "B": []}
     for elem in rez[1:]:
-        example_images[elem[1]].append([elem[0], elem[2]])
+        example_images[elem[1]].append([elem[0], elem[2], elem[3]])
 
 
     return_val = {
@@ -157,7 +159,7 @@ def getPrediction():
 
 def getSimilar(cls_func_name="explorator_cls"):
 
-    data, groups, doDeploy, datasetName = preProcessData()
+    data, groups, doDeploy, datasetName, prefix = preProcessData()
 
     embeddingDataset = EMBEDDING_DATASET + "_" + datasetName
 
@@ -273,7 +275,7 @@ def getSimilar(cls_func_name="explorator_cls"):
             "type": "transform",
             "params": {
                 "inputData": """
-                    SELECT *, '%s' as datasetName
+                    SELECT *, '%s' as datasetName, '%s' as imagePrefix
                     NAMED training_labels.rowName()
                     FROM training_labels_%s as training_labels
                     JOIN (
@@ -282,7 +284,7 @@ def getSimilar(cls_func_name="explorator_cls"):
                             FROM %s
                         ) as score
                     ) ON score.rowName() = training_labels.rowName()
-                """ % (datasetName, run_id, cls_func_name, embeddingDataset),
+                """ % (datasetName, prefix, run_id, cls_func_name, embeddingDataset),
                 "outputDataset": "predictions_%s" % run_id
             }
         })
@@ -292,11 +294,6 @@ def getSimilar(cls_func_name="explorator_cls"):
 
     grpA = [ (x, scores_dict[x])   for x in groups[0] ]
     grpB = [ (x, 1-scores_dict[x]) for x in groups[1] ]
-
-    mldb.log(len(grpA))
-    mldb.log(len(grpB))
-    mldb.log(scores)
-    mldb.log(" ====================== ")
 
     numImgToBreak = min(10, int(len(scores) / 2))
 
