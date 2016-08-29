@@ -85,12 +85,18 @@
                 <label for="collectionName">Name</label>
                 <input class="form-control" id="collectionName" placeholder="Name">
             </div>
+            <div class="form-group">
+                <label for="imageLimit">Limit</label>
+                <input class="form-control" id="imageLimit" placeholder="100">
+                 <p class="help-block">Maximum number of images to process. With 32 cores, it goes at about 25 images per second. -1 for no limit.</p>
+            </div>
              <div class="form-group">
                  <label for="filesToUpload">File input</label>
                  <input type="file" id="filesToUpload" multiple>
                  <p class="help-block">You can only upload JPEG images.</p>
             </div>
-            <a href="#" class="btn btn-primary" role="button" onclick="$.uploadFiles()">Upload</a>
+            <button type="button" id="uploadButton" class="btn btn-primary" onclick="$.uploadFiles()">Upload</button>
+            <img src="gears.gif" id="gears">
         </p>
       </div>
     </div>
@@ -103,6 +109,7 @@
 imgPrefix = "https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images";
 
 $( document ).ready(function() {
+    $("#gears").hide();
     $(".builtin").click(function(x) {
         window.location.href = window.location.href.split("/").slice(0, -1).join("/") + "/dataset_builder.html?"+
                 "prefix=" + encodeURIComponent(imgPrefix) +
@@ -119,8 +126,15 @@ $( document ).ready(function() {
             return;
         }
 
-        if($('#collectionName').val().length == 0)
+        if($('#collectionName').val().length == 0) {
             alert("Must give a dataset name!");
+            return;
+        }
+
+        // we're reading so update the ui
+        $("#gears").show();
+        $("#uploadButton").text('Processing...');
+        $("#uploadButton").prop('disabled', true);
 
 
         var num_images = files.length;
@@ -159,9 +173,13 @@ $( document ).ready(function() {
             $.ajax({
                 method: "POST",
                 url: window.location.href.split("/").slice(0, -2).join("/") + "/createDataset",
-                data: JSON.stringify({ "dataset": $('#collectionName').val(), "images": image_data}),
+                data: JSON.stringify({
+                    "dataset": $('#collectionName').val(),
+                    "images": image_data,
+                    "limit": $('#imageLimit').val()
+                }),
                 dataType: "json",
-                fail: function() { alert('an error occured!'); },
+                error: function(e) { alert('an error occured!'); },
                 success: function(e) {
                     window.location.href = window.location.href.split("/").slice(0, -1).join("/") + "/dataset_builder.html?"+
                             "prefix="+encodeURIComponent(window.location.href.split("/").slice(0, -1).join("/"))+

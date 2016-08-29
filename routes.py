@@ -348,10 +348,12 @@ def getSimilar(cls_func_name="explorator_cls"):
 
 def createDataset():
     import base64, re, os
+    
+    unique_id = str(binascii.hexlify(os.urandom(16)))
 
     payload = json.loads(mldb.plugin.rest_params.payload)
 
-    collectionName = payload['dataset'].replace(".", "").replace("/", "")
+    collectionName = payload['dataset'].replace(".", "").replace("/", "").replace("-", "_") + "_" + unique_id
     collectionFolder = os.path.join(mldb.plugin.get_plugin_dir(), "static", collectionName)
     if not os.path.exists(collectionFolder):
         os.mkdir(collectionFolder)
@@ -370,6 +372,7 @@ def createDataset():
     payload = {
         "name": collectionName,
         "folder": collectionFolder,
+        "limit": payload['limit']
     }
     mldb.log("calling embedding function")
     embedFolderWithPayload(payload)
