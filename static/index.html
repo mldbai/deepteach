@@ -9,81 +9,53 @@
 <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Classifier Builder</title>
+    <title>DeepTeach - The Interactive Deep Image Classifier Builder</title>
 </head>
 <body>
  <div class="container">
-<h1>Classifier Builder</h1>
-<h3>Dataset selection</h3>
-
-<div class="row">
-  <div class="col-sm-6 col-md-4">
-    <div class="thumbnail well">
-        <p>
-          <img src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/realestate/office_building-12.jpg" alt="...">
-          <img src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/realestate/beach_house-4.jpg" alt="...">
-        </p>
-      <div class="caption">
-        <h3>Real estate</h3>
-        <p>
-            <a href="#" class="btn btn-primary builtin" role="button" id="realestate">Use dataset</a>
-        </p>
-      </div>
-    </div>
-  </div>
-
-   <div class="col-sm-6 col-md-4">
-    <div class="thumbnail well">
-        <p>
-          <img src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/recipe/salad_recipe-18.jpg" alt="...">
-          <img src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/recipe/eggs_recipe-1.jpg" alt="...">
-        </p>
-      <div class="caption">
-        <h3>Recipes</h3>
-        <p><a href="#" class="btn btn-primary builtin" role="button" id="recipe">Use dataset</a>
-        <br><br>
-        </p>
-      </div>
-    </div>
-  </div>
+     <h1>DeepTeach <small><i>the Interactive Deep Image Classifier Builder</i></small></h1>
+<div class="well well-sm col-sm-12 col-md-8">
+    <p>With <i>DeepTeach</i>, you can interactively build an image classifier by teaching the model
+what you're looking for! It uses deep learning, transfer learning and similarity serach. Check out the <a href="https://docs.mldb.ai/ipy/notebooks/_demos/_latest/Transfer%20Learning%20with%20Tensorflow.html">Transfer Learning on Images with Tensorflow</a> MLDB demo for more details.
+</p>
 </div>
 <div class="row">
-  <div class="col-sm-6 col-md-4">
+  <div class="col-sm-12 col-md-8">
     <div class="thumbnail well">
-        <p>
-          <img src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/pets/boxer_132.jpg" alt="...">
-          <img src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/pets/Maine_Coon_77.jpg" alt="...">
-        </p>
       <div class="caption">
-        <h3>Pets</h3>
-        <p><a href="#" class="btn btn-primary builtin" role="button" id="pets">Use dataset</a>
-<br><br>
-        </p>
-      </div>
+        <h3>Use a pre-embedded dataset</h3>
     </div>
-  </div>
 
-   <div class="col-sm-6 col-md-4">
-    <div class="thumbnail well">
-        <p>
-          <img src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/transport/sports_car_wallpaper-12.jpg" alt="...">
-          <img src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/transport/bulldozer_wallpaper-13.jpg" alt="...">
-        </p>
-      <div class="caption">
-        <h3>Transportation</h3>
-        <p><a href="#" class="btn btn-primary builtin" role="button" id="transport">Use dataset</a>
-        </p>
+      <div class="row">
+        <div class="col-lg-3" style="text-align:center;">
+          <img class="img-circle" src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/realestate/office_building-12.jpg" alt="Generic placeholder image" width="140" height="140"><br><br>
+          <p><a class="btn btn-default builtin" href="#" role="button" id="realestate">Real estate</a></p>
+        </div><!-- /.col-lg-4 -->
+        <div class="col-lg-3" style="text-align:center;">
+          <img class="img-circle" src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/recipe/avocado_recipe-5.jpg" alt="Generic placeholder image" width="140" height="140"><br><br>
+          <p><a class="btn btn-default builtin" href="#" role="button" id="recipe">Recipes</a></p>
+        </div><!-- /.col-lg-4 -->
+        <div class="col-lg-3" style="text-align:center;">
+          <img class="img-circle" src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/pets/Ragdoll_31.jpg" alt="Generic placeholder image" width="140" height="140"><br><br>
+          <p><a class="btn btn-default builtin" href="#" role="button" id="pets">Pets</a></p>
+        </div><!-- /.col-lg-4 -->
+        <div class="col-lg-3" style="text-align:center;">
+          <img class="img-circle" src="https://s3.amazonaws.com/public-mldb-ai/datasets/dataset-builder/images/transport/sports_car_wallpaper-12.jpg" alt="Generic placeholder image" width="140" height="140"><br><br>
+          <p><a class="btn btn-default builtin" href="#" role="button" id="transport">Transportation</a></p>
+        </div><!-- /.col-lg-4 -->
+      </div><!-- /.row -->
+
       </div>
-    </div>
   </div>
-
 </div>
+
 
 <div class="row">
   <div class="col-sm-12 col-md-8">
     <div class="thumbnail well">
       <div class="caption">
         <h3>Upload your own images!</h3>
+    </div>
         <form>
             <div class="form-group">
                 <label for="collectionName">Dataset name</label>
@@ -92,7 +64,7 @@
             <div class="form-group">
                 <label for="imageLimit">Limit</label>
                 <input class="form-control" id="imageLimit" placeholder="100">
-                 <p class="help-block">Maximum number of images to process. With 32 cores, it goes at about 25 images per second. -1 for no limit.</p>
+                 <p class="help-block">Maximum number of images to process. With 32 cores and no GPU, it goes at about 40 images per second. -1 for no limit.</p>
             </div>
              <div class="form-group">
                  <label for="filesToUpload">Your images</label>
@@ -105,9 +77,8 @@
             </button>
             <img src="gears.gif" id="gears">
             <span id="status"></span>
-        </p>
+    </form>
       </div>
-    </div>
   </div>
 </div>
 
