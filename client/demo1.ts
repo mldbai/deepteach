@@ -66,6 +66,7 @@ function sendSimilar(deploy: boolean){
         document.body.replaceChild(create(u), $('#main')[0])
         InitSortable()
         $("#spinner").hide()
+        $(".startedHidden").show()
         if(deploy){
             w.location.assign(`rt_prediction.html?deploy_id=${ret.deploy_id}`)
         }
@@ -117,10 +118,17 @@ const Img = ([imgId, dist]: IdDist) => {
 
 }
 
-function Panel(id: string, style: any, idDists: IdDist[], title: string){
+function Panel(id: string, style: any, idDists: IdDist[], title: string, backgroundImg?: string){
     let o1 = idDists.map(Img)
     let o = addTags(o1)
-    return o.DIVp({id: id, className: 'sortable', style: style})
+
+    let style2 = JSON.parse(JSON.stringify(style))
+    if(backgroundImg) {
+        style2["background"] = "url("+backgroundImg+") center center"
+        style2["backgroundRepeat"] = "no-repeat"
+    }
+
+    return o.DIVp({id: id, className: 'sortable', style: style2})
 }
 
 // Add HTML tag as a function into array, so for an array like a = ['abc', 'def']
@@ -195,30 +203,31 @@ function ui (s: State){
     addTags(Array.prototype)
 
     let aStyle = { maxHeight: "500px", overflow: "auto", marginBottom: "15px", minHeight: "100px"}
-    let pa = Panel('panelA', pStyle, s.a, 'Target')
-    let pb = Panel('panelB', pStyle, s.b, 'Not Target')
+    let pa = Panel('panelA', pStyle, s.a, 'Target', 'drag_pos.png')
+    let pb = Panel('panelB', pStyle, s.b, 'Not Target', 'drag_neg.png')
     let pa1 = Panel('panelMaybeA', pStyle, s.maybeA, 'Maybe Target')
     let pb1 = Panel('panelMaybeB', pStyle, s.maybeB, 'Probably Not Target')
 
     let ps = Panel('panelSamples', sampleStyle, s.samples, 'Samples')
-    //let pi = Panel('panelI', pStyle, s.ignore, 'Ingore')
 
     let btn       = addTags( h('button', {"onclick": onClick, className: 'btn btn-primary', style: btnStyle }, "Find Similar"))
     let btnDeploy = addTags( h('button', {"onclick": onDeploy, className: 'btn', style: btnStyle }, "Deploy"))
     let btn2 = createButton(addAllToA)
     let btn3 = createButton(addAllToB)
-    let h2p = {style: { textAlign: "center", fontSize: "30px", color: "blue"}}
+    let h2p = {style: { textAlign: "center", fontSize: "25px"}}
+    let hidden = {className: 'startedHidden', style: {display: "none"}}
+    //let h2p = {style: { textAlign: "center", fontSize: "22px",  marginLeft: "5px" }, className: 'label label-info'}
     let c2 = {colSpan: 2}
     let c3 = {colSpan: 3}
     let c4 = {colSpan: 4}
 
     return h('table#main',
-        [ ([VText('Samples')] as any).mapDIVp(h2p).mapTDp(c4).TR
+        [ ([VText('Samples'), [btnDeploy, btn]] as any).mapDIVp(h2p).mapTDp(c2).TR
         , ([ps] as any).mapTDp(c4).TR
-        , ([VText('A').DIVp(h2p), VText(""), VText('B').DIVp(h2p), [btn, btnDeploy]] as any).mapTD.TR,
+        , ([VText('Target').DIVp(h2p), VText(""), VText('Not Target').DIVp(h2p)] as any).mapTD.TR,
         , ([pa, pb] as any).mapTDp(c2).TR
-        , ([VText('Maybe Target').DIVp(h2p), btn2, VText('Probably Not Target').DIVp(h2p), btn3] as any).mapTD.TR,
-        , ([pa1, pb1] as any).mapTDp(c2).TR
+        , ([VText('Maybe Target').DIVp(h2p), btn2, VText('Probably Not Target').DIVp(h2p), btn3] as any).mapDIVp(hidden).mapTD.TR,
+        , ([pa1, pb1] as any).mapDIVp(hidden).mapTDp(c2).TR
         ])
 }
 

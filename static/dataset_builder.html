@@ -3,14 +3,63 @@
 <html>
     <head>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
         <title>DeepTeach - The Interactive Deep Image Classifier Builder</title>
      </head>
      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-    <body >
-     <h1>DeepTeach <small><i>the Interactive Deep Image Classifier Builder</i></small></h1>
-     <a href='index.html' style="float: right; margin-right: 100px">Back</a>
+    <body>
+
+<!-- Modal -->
+<div id="gettingStartedModal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Getting started with DeepTeach...</h4>
+      </div>
+      <div class="modal-body">
+
+    youtube
+
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+
+
+    <nav class="navbar navbar-inverse navbar-top">
+      <div class="container">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">DeepTeach - <i>the Interactive Deep Image Classifier Builder</i></a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <span class="navbar-form navbar-right">
+            <button class="btn-sm" onclick="location.href = 'index.html';">
+                <span class="glyphicon glyphicon-chevron-left"></span>
+                Back
+            </button>
+            <button type="button" class="btn-sm" data-toggle="modal" data-target="#gettingStartedModal">
+                <span class="glyphicon glyphicon-question-sign"></span>
+                How to get started?
+            </button>
+          </span>
+        </div><!--/.navbar-collapse -->
+      </div>
+    </nav>
+
     <i id="spinner" class="fa fa-spinner fa-spin fa-5x" style="position: fixed; left: 50%; top: 50%; display: none"></i>
+
+
     </body>
     <script src="bundle.js" ></script>
 </html>

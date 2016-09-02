@@ -87,6 +87,7 @@
 	        document.body.replaceChild(create(u), $('#main')[0]);
 	        InitSortable();
 	        $("#spinner").hide();
+	        $(".startedHidden").show();
 	        if (deploy) {
 	            w.location.assign("rt_prediction.html?deploy_id=" + ret.deploy_id);
 	        }
@@ -119,10 +120,15 @@
 	    var p = pie(dist, color);
 	    return h('span', { style: {} }, [img, p]);
 	};
-	function Panel(id, style, idDists, title) {
+	function Panel(id, style, idDists, title, backgroundImg) {
 	    var o1 = idDists.map(Img);
 	    var o = addTags(o1);
-	    return o.DIVp({ id: id, className: 'sortable', style: style });
+	    var style2 = JSON.parse(JSON.stringify(style));
+	    if (backgroundImg) {
+	        style2["background"] = "url(" + backgroundImg + ") center center";
+	        style2["backgroundRepeat"] = "no-repeat";
+	    }
+	    return o.DIVp({ id: id, className: 'sortable', style: style2 });
 	}
 	// Add HTML tag as a function into array, so for an array like a = ['abc', 'def']
 	// a.TD = TD(a)
@@ -188,28 +194,29 @@
 	    //This modify array's prototype.
 	    addTags(Array.prototype);
 	    var aStyle = { maxHeight: "500px", overflow: "auto", marginBottom: "15px", minHeight: "100px" };
-	    var pa = Panel('panelA', pStyle, s.a, 'Target');
-	    var pb = Panel('panelB', pStyle, s.b, 'Not Target');
+	    var pa = Panel('panelA', pStyle, s.a, 'Target', 'drag_pos.png');
+	    var pb = Panel('panelB', pStyle, s.b, 'Not Target', 'drag_neg.png');
 	    var pa1 = Panel('panelMaybeA', pStyle, s.maybeA, 'Maybe Target');
 	    var pb1 = Panel('panelMaybeB', pStyle, s.maybeB, 'Probably Not Target');
 	    var ps = Panel('panelSamples', sampleStyle, s.samples, 'Samples');
-	    //let pi = Panel('panelI', pStyle, s.ignore, 'Ingore')
 	    var btn = addTags(h('button', { "onclick": onClick, className: 'btn btn-primary', style: btnStyle }, "Find Similar"));
 	    var btnDeploy = addTags(h('button', { "onclick": onDeploy, className: 'btn', style: btnStyle }, "Deploy"));
 	    var btn2 = createButton(addAllToA);
 	    var btn3 = createButton(addAllToB);
-	    var h2p = { style: { textAlign: "center", fontSize: "30px", color: "blue" } };
+	    var h2p = { style: { textAlign: "center", fontSize: "25px" } };
+	    var hidden = { className: 'startedHidden', style: { display: "none" } };
+	    //let h2p = {style: { textAlign: "center", fontSize: "22px",  marginLeft: "5px" }, className: 'label label-info'}
 	    var c2 = { colSpan: 2 };
 	    var c3 = { colSpan: 3 };
 	    var c4 = { colSpan: 4 };
-	    return h('table#main', [[VText('Samples')].mapDIVp(h2p).mapTDp(c4).TR,
+	    return h('table#main', [[VText('Samples'), [btnDeploy, btn]].mapDIVp(h2p).mapTDp(c2).TR,
 	        [ps].mapTDp(c4).TR,
-	        [VText('A').DIVp(h2p), VText(""), VText('B').DIVp(h2p), [btn, btnDeploy]].mapTD.TR,
+	        [VText('Target').DIVp(h2p), VText(""), VText('Not Target').DIVp(h2p)].mapTD.TR,
 	        ,
 	        [pa, pb].mapTDp(c2).TR,
-	        [VText('Maybe Target').DIVp(h2p), btn2, VText('Probably Not Target').DIVp(h2p), btn3].mapTD.TR,
+	        [VText('Maybe Target').DIVp(h2p), btn2, VText('Probably Not Target').DIVp(h2p), btn3].mapDIVp(hidden).mapTD.TR,
 	        ,
-	        [pa1, pb1].mapTDp(c2).TR
+	        [pa1, pb1].mapDIVp(hidden).mapTDp(c2).TR
 	    ]);
 	}
 	function rows2State(rows) {
