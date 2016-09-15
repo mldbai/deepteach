@@ -206,7 +206,7 @@
 	    var h2p = { style: { textAlign: "center", fontSize: "25px" } };
 	    var hidden = { className: 'startedHidden', style: { display: "none" } };
 	    //let h2p = {style: { textAlign: "center", fontSize: "22px",  marginLeft: "5px" }, className: 'label label-info'}
-	    var c2 = { colSpan: 2 };
+	    var c2 = { colSpan: 2, vAlign: "top" };
 	    var c3 = { colSpan: 3 };
 	    var c4 = { colSpan: 4 };
 	    return h('table#main', [[VText('Samples'), [btnDeploy, btn]].mapDIVp(h2p).mapTDp(c2).TR,

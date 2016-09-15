@@ -217,7 +217,7 @@ function ui (s: State){
     let h2p = {style: { textAlign: "center", fontSize: "25px"}}
     let hidden = {className: 'startedHidden', style: {display: "none"}}
     //let h2p = {style: { textAlign: "center", fontSize: "22px",  marginLeft: "5px" }, className: 'label label-info'}
-    let c2 = {colSpan: 2}
+    let c2 = {colSpan: 2, vAlign: "top"}
     let c3 = {colSpan: 3}
     let c4 = {colSpan: 4}
 
