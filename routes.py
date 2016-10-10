@@ -193,7 +193,7 @@ def getSimilar(cls_func_name="explorator_cls"):
             # labels in positive class in case we don't have enough
             if lbl == 0 and not doDeploy:
                 # will return list of ["slid","596e1ca6687cd301",1.9799363613128662]
-                neighbours = mldb2.query("select nearest_%s({coords: '%s'})[neighbors] as *" % (datasetName, img)) 
+                neighbours = mldb2.query("select nearest_%s({coords: '%s'})[neighbors] as *" % (datasetName, img))
 
                 for nName in neighbours[1][1:]:
                     to_add.append((nName, [["label", lbl, now], ["weight", 0.25, now]]))
@@ -228,6 +228,12 @@ def getSimilar(cls_func_name="explorator_cls"):
         }
     })
 
+    modelDir = os.path.join(mldb.plugin.get_plugin_dir(), "models")
+    if not os.path.exists(modelDir):
+        os.makedirs(modelDir)
+
+    modelAbsolutePath = modelDir+"/dataset_creator_%s.cls.gz" % run_id
+
     to_delete.append("/v1/procedures/trainer_" + run_id)
     rez = mldb2.put("/v1/procedures/trainer_" + run_id, {
         "type": "classifier.train",
@@ -239,7 +245,7 @@ def getSimilar(cls_func_name="explorator_cls"):
                 FROM training_dataset_%s
                 WHERE label IS NOT NULL
             """ % run_id,
-            "modelFileUrl": "file:///mldb_data/dataset_creator_%s.cls.gz" % run_id,
+            "modelFileUrl": "file://"+modelAbsolutePath,
             "algorithm": "my_bdt",
             "configuration": {
                 "my_bdt": {
@@ -324,7 +330,9 @@ def getSimilar(cls_func_name="explorator_cls"):
     for toDel in to_delete:
         mldb.log("    deleting " + toDel)
         mldb2.delete(toDel)
-
+    if not doDeploy:
+        mldb.log("    deleting " + modelAbsolutePath)
+        os.remove(modelAbsolutePath)
 
     rtn_dict = {
         "a": {
@@ -374,7 +382,7 @@ def createDataset():
     }
     mldb.log("calling embedding function")
     embedFolderWithPayload(payload)
-    
+
     # create nearest neighbour function. this will allow us to quickly find similar images
     mldb2.put("/v1/functions/nearest_%s" % collectionName, {
         "type": "embedding.neighbors",
