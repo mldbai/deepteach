@@ -6,7 +6,7 @@
 
 import json, os, datetime, math
 from operator import itemgetter
-import functools, urllib
+import functools, urllib, time
 import binascii
 
 mldb2 = mldb_wrapper.wrap(mldb)
@@ -177,7 +177,7 @@ def getSimilar(cls_func_name="explorator_cls"):
 
     dataset_config = {
         'type'    : 'sparse.mutable',
-        'id'      : "training_labels_" + run_id
+        'id'      : "training_labels_pos_" + run_id if not doDeploy else "training_labels_"+run_id
     }
 
     to_delete.append("/v1/datasets/" + dataset_config["id"])
@@ -185,19 +185,20 @@ def getSimilar(cls_func_name="explorator_cls"):
     now = datetime.datetime.now()
 
 
+    to_add = []
     already_added = set()
 
-    to_add = []
+    times = {}
+    t0 = time.time()
     for lbl, imgs in enumerate(groups):
         for img in imgs:
-            if img in already_added:
-                continue
+            if img in already_added: continue
             dataset.record_row(img, [["label", lbl, now], ["weight", 1, now]])
             already_added.add(img)
 
             # if it's the positive group, look at nearest neighbhours to add extra
             # labels in positive class in case we don't have enough
-            if lbl == 0 and not doDeploy:
+            if lbl == 0 and len(imgs)<10 and not doDeploy:
                 # will return list of ["slid","596e1ca6687cd301",1.9799363613128662]
                 neighbours = mldb2.query("select nearest_%s({coords: '%s'})[neighbors] as *" % (datasetName, img))
 
@@ -211,18 +212,45 @@ def getSimilar(cls_func_name="explorator_cls"):
         if row in already_added: continue
         dataset.record_row(row, cols)
         already_added.add(row)
-
-    # now add all remaining examples as low weight negative examples
-    if not doDeploy:
-        query = "SELECT rowName() FROM %s WHERE NOT (rowName() IN ('%s'))" % \
-                            (embeddingDataset, "','".join(list(already_added)))
-        for line in mldb2.query(query)[1:]:
-            dataset.record_row(line[0], [["label", 1, now], ["weight", 0.001, now]])
-            already_added.add(line[0])
-
+    
     dataset.commit()
 
+    t1 = time.time()
+    times["1 - add posex nearest neighbour"] = t1-t0
 
+    t0 = time.time()
+    # now add all remaining examples as low weight negative examples
+    if not doDeploy:
+        to_delete.append("/v1/datasets/training_labels_neg_" + run_id)
+        mldb2.post("/v1/procedures", {
+            "type": "transform",
+            "params": {
+                "inputData": """
+                    SELECT label: 1, weight: 0.001 
+                    FROM %s 
+                    WHERE NOT (rowName() IN (SELECT rowName() FROM training_labels_pos_%s))
+                """ % (embeddingDataset, run_id),
+                "outputDataset": "training_labels_neg_"+run_id,
+            }
+        })
+
+        to_delete.append("/v1/datasets/training_labels_" + run_id)
+        mldb2.put("/v1/datasets/training_labels_" + run_id, {
+            "type": "merged",
+            "params": {
+                "datasets": [
+                    {"id": "training_labels_neg_"+run_id},
+                    {"id": "training_labels_pos_"+run_id}
+                ]
+            }
+        })
+    
+        t1 = time.time()
+        times["2 - add negex low weight"] = t1-t0
+
+
+
+    t0 = time.time()
     to_delete.append("/v1/datasets/training_dataset_" + run_id)
     mldb2.put("/v1/datasets/training_dataset_" + run_id, {
         "type": "merged",
@@ -233,6 +261,8 @@ def getSimilar(cls_func_name="explorator_cls"):
             ]
         }
     })
+    t1 = time.time()
+    times["4 - create merge labels + embedding"] = t1-t0
 
     modelDir = os.path.join(mldb.plugin.get_plugin_dir(), "models")
     if not os.path.exists(modelDir):
@@ -242,7 +272,10 @@ def getSimilar(cls_func_name="explorator_cls"):
 
     mldb.log("Training with %d bags, %0.2f rnd feats" % (numBags, numRndFeats))
 
+    t0 = time.time()
     to_delete.append("/v1/procedures/trainer_" + run_id)
+    if not doDeploy:
+        to_delete.append("/v1/functions/explorator_cls_" + run_id)
     rez = mldb2.put("/v1/procedures/trainer_" + run_id, {
         "type": "classifier.train",
         "params": {
@@ -272,17 +305,22 @@ def getSimilar(cls_func_name="explorator_cls"):
             "functionName": cls_func_name
         }
     })
+    t1 = time.time()
+    times["5 - training"] = t1-t0
 
 
+    t0 = time.time()
     query = """
         SELECT %s({features: {*}}) as *
         FROM %s
         ORDER BY score DESC""" % (cls_func_name, embeddingDataset)
     scores = mldb2.query(query)
     del scores[0]   # remove header
+    num_images = len(scores)
     scores_dict = {v[0]: v[1] for v in scores}
+    t1 = time.time()
+    times["6 - scrore all examples"] = t1-t0
 
-    #mldb.log(scores)
 
     if doDeploy:
         mldb2.put("/v1/procedures/transformer", {
@@ -304,7 +342,8 @@ def getSimilar(cls_func_name="explorator_cls"):
         })
 
 
-    already_added = set(list(groups[0]) + list(groups[1]))
+    t0 = time.time()
+    already_added = groups[0].union(groups[1])
 
     grpA = [ (x, scores_dict[x])   for x in groups[0] ]
     grpB = [ (x, 1-scores_dict[x]) for x in groups[1] ]
@@ -324,15 +363,19 @@ def getSimilar(cls_func_name="explorator_cls"):
         if x[0] in already_added: continue
         already_added.add(x[0])
         exploitB.append((x[0], 1-x[1]))
+    
+    
+    t1 = time.time()
+    times["7 - rest"] = t1-t0
 
-
-    rez = mldb2.query("select count(*) from %s" % embeddingDataset)
-    num_images = rez[1][1]
-
+    t0 = time.time()
     new_sample = []
-    for elem in mldb2.query("select * from sample(%s, {rows:%d})" % (embeddingDataset, min(100, num_images)))[1:]:
+    for elem in mldb2.query("select rowName() from sample(%s, {rows:%d})" % (embeddingDataset, min(100, num_images)))[1:]:
         if elem[0] in already_added: continue
         new_sample.append([elem[0],scores_dict[elem[0]]])
+    t1 = time.time()
+    times["8 - sample"] = t1-t0
+
 
     # house keeping
     for toDel in to_delete:
@@ -357,6 +400,9 @@ def getSimilar(cls_func_name="explorator_cls"):
         "sample": new_sample[:20],
         "deploy_id": run_id if doDeploy else ""
     }
+
+    mldb.log(times)
+
     return (rtn_dict, 200)
 
 
