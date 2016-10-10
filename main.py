@@ -83,6 +83,8 @@ if "limit" in mldb.plugin.args:
 for collection in ["recipe", "transport", "pets", "realestate"]:
     loadCollection(collection, filePrefix, limit)
 
+loadCollection("realestate_big", filePrefix)
+
 # load any extra collections specified at plugin creation
 if "extraCollections" in mldb.plugin.args:
     mldb.log(" >> Loading extra collections")
