@@ -20,16 +20,22 @@ def preProcessData():
     inputIndex = -1
     deploy = False
     dataset = None
+    numBags = 50
+    numRndFeats = 0.1
 
     for elem_idx, elem in enumerate(rp):
         if elem[0] == "input":
             inputIndex = elem_idx
-        if elem[0] == "deploy" and elem[1] == "true":
+        elif elem[0] == "deploy" and elem[1] == "true":
             deploy = True
-        if elem[0] == "dataset":
+        elif elem[0] == "dataset":
             dataset = elem[1]
-        if elem[0] == "prefix":
+        elif elem[0] == "prefix":
             prefix = elem[1]
+        elif elem[0] == "numBags":
+            numBags = int(elem[1])
+        elif elem[0] == "numRndFeats":
+            numRndFeats = float(elem[1])
 
     if dataset is None:
         return ("Dataset needs to be specified", 400)
@@ -48,7 +54,7 @@ def preProcessData():
         if len(groups[idx]) == 0:
             return ("Data group '%s' cannot be empty!" % name, 400)
 
-    return data, groups, deploy, dataset, prefix
+    return data, groups, deploy, dataset, prefix, numBags, numRndFeats
 
 
 
@@ -159,7 +165,7 @@ def getPrediction():
 
 def getSimilar(cls_func_name="explorator_cls"):
 
-    data, groups, doDeploy, datasetName, prefix = preProcessData()
+    data, groups, doDeploy, datasetName, prefix, numBags, numRndFeats = preProcessData()
 
     embeddingDataset = EMBEDDING_DATASET + "_" + datasetName
 
@@ -234,6 +240,8 @@ def getSimilar(cls_func_name="explorator_cls"):
 
     modelAbsolutePath = modelDir+"/dataset_creator_%s.cls.gz" % run_id
 
+    mldb.log("Training with %d bags, %0.2f rnd feats" % (numBags, numRndFeats))
+
     to_delete.append("/v1/procedures/trainer_" + run_id)
     rez = mldb2.put("/v1/procedures/trainer_" + run_id, {
         "type": "classifier.train",
@@ -255,9 +263,9 @@ def getSimilar(cls_func_name="explorator_cls"):
                         "type": "decision_tree",
                         "verbosity": 0,
                         "max_depth": 10,
-                        "random_feature_propn": 0.1
+                        "random_feature_propn": numRndFeats,
                     },
-                    "num_bags": 50
+                    "num_bags": numBags
                 }
             },
             "mode": "boolean",

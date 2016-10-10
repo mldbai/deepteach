@@ -76,9 +76,11 @@
 	    $("#spinner").show();
 	    var f = function (id) { return $("#" + id + "  img").map(function (idx, o) { return o.id; }).get(); };
 	    var data = { a: f('panelA'), b: f('panelB'), ignore: f('panelI') };
+	    var numRndFeats = $("#numRndFeats").val();
+	    var numBags = $("#numBags").val();
 	    var dataset = QueryString['dataset'];
 	    var prefix = QueryString['prefix'];
-	    var url = "../similar?dataset=" + dataset + "&prefix=" + prefix + "&deploy=" + deploy + "&input=" + JSON.stringify(data);
+	    var url = "../similar?dataset=" + dataset + "&prefix=" + prefix + "&deploy=" + deploy + "&numBags=" + numBags + "&numRndFeats=" + numRndFeats + "&input=" + JSON.stringify(data);
 	    var w = deploy ? window.open('rt_prediction.html') : null;
 	    $.ajax(url).done(function (ret) {
 	        var s = SimilarResponse2State(ret);

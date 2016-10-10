@@ -55,9 +55,12 @@ function sendSimilar(deploy: boolean){
     let f = (id: string ) => $(`#${id}  img`).map((idx:number, o: Element) => o.id).get()
     let data = {a: f('panelA'), b: f('panelB'), ignore: f('panelI')}
 
+    let numRndFeats = $("#numRndFeats").val();
+    let numBags = $("#numBags").val();
+
     let dataset = QueryString['dataset'];
     let prefix = QueryString['prefix'];
-    let url= `../similar?dataset=${dataset}&prefix=${prefix}&deploy=${deploy}&input=${JSON.stringify(data)}`
+    let url= `../similar?dataset=${dataset}&prefix=${prefix}&deploy=${deploy}&numBags=${numBags}&numRndFeats=${numRndFeats}&input=${JSON.stringify(data)}`
     let w = deploy ? window.open('rt_prediction.html') : null
     $.ajax(url).done((ret: SimilarResponse) =>{
         let s = SimilarResponse2State(ret)

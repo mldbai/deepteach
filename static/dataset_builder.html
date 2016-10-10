@@ -1,16 +1,18 @@
-
 <!DOCTYPE html>
 <html>
     <head>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.1/jquery.min.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <script src="bootstrap-slider.js"></script>
+        <link href="bootstrap-slider.css" rel="stylesheet">
+
         <title>DeepTeach - The Interactive Deep Image Classifier Builder</title>
      </head>
      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
     <body>
 
-<!-- Modal -->
+<!-- Getting started Modal -->
 <div id="gettingStartedModal" class="modal fade" role="dialog">
   <div class="modal-dialog">
 
@@ -24,6 +26,65 @@
 
     youtube
 
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Advanced Modal -->
+<div id="advancedModal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Advanced Settings</h4>
+      </div>
+      <div class="modal-body">
+<p>
+DeepTeach uses a <i>bagged boosted decision tree</i> as its supervised classifier. The features it uses are the representation learned by a deep convlutional neural network. The options below give control over some of the BBDT's hyper-parameters:
+</p>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <div class="row">
+        <div class="col-md-6">
+            <h3 class="panel-title">Percentage of random features</h3>
+        </div>
+        <div class="col-md-6">
+            <input id="numRndFeats" data-slider-id='numRndFeatsSlider' type="text" data-slider-min="0.05" data-slider-max="1" data-slider-step="0.05" data-slider-value="0.1" class="form-control" />
+        </div>
+    </div>
+  </div>
+  <div class="panel-body">
+    <p>Controls the number of features to randomly use when deciding on the best split. This controls the <i>random_feature_propn</i> configuration parameter. See the <a href="http://spock.datacratic.com:2361/doc/#builtin/ClassifierConf.md.html" target="_blank">Classifier configuration</a> documentation page for more details. It can be used to limit the model's learning capacity and prevent overfitting.</p>
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <div class="row">
+        <div class="col-md-6">
+            <h3 class="panel-title">Numbers of bags</h3>
+        </div>
+        <div class="col-md-6">
+    <input id="numBags" data-slider-id='numBagsSlider' type="text" data-slider-min="1" data-slider-max="75" data-slider-step="1" data-slider-value="50" class="form-control" />
+        </div>
+    </div>
+  </div>
+  <div class="panel-body">
+<p>Controls the number of bags to use when training. Each bag is a random selection of training examples on which one tree will be trained. <a href-"https://en.wikipedia.org/wiki/Bootstrap_aggregating" target="_blank">Bagging</a> helps with generalization, but slows down training. The higher the number, the longer the training will take.</p>
+  </div>
+</div>
+
+<div>
+</div>
 
       </div>
       <div class="modal-footer">
@@ -50,7 +111,11 @@
             </button>
             <button type="button" class="btn-sm" data-toggle="modal" data-target="#gettingStartedModal">
                 <span class="glyphicon glyphicon-question-sign"></span>
-                How to get started?
+                Getting started
+            </button>
+            <button type="button" class="btn-sm" data-toggle="modal" data-target="#advancedModal">
+                <span class="glyphicon glyphicon-pencil"></span>
+                Advanced Settings
             </button>
           </span>
         </div><!--/.navbar-collapse -->
@@ -62,4 +127,16 @@
 
     </body>
     <script src="bundle.js" ></script>
+<script>
+$('#numRndFeats').slider({
+    formatter: function(value) {
+        return 'Current value: ' + (value*100).toFixed(0) + '%';
+    }
+});
+$('#numBags').slider({
+    formatter: function(value) {
+        return 'Current value: ' + value;
+    }
+});
+</script>
 </html>
