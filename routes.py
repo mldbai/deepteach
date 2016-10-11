@@ -229,6 +229,7 @@ def getSimilar(cls_func_name="explorator_cls"):
                     SELECT label: 1, weight: 0.001
                     FROM %s
                     WHERE NOT (rowName() IN (SELECT rowName() FROM training_labels_pos_%s))
+                    LIMIT 300
                 """ % (embeddingDataset, run_id),
                 "outputDataset": "training_labels_neg_"+run_id,
             }
@@ -277,6 +278,19 @@ def getSimilar(cls_func_name="explorator_cls"):
         to_delete.append("/v1/functions/explorator_cls_" + run_id)
 
     if True:
+        to_delete.append("/v1/datasets/rnd_forest_training_%s" % run_id)
+        mldb2.post("/v1/procedures", {
+            "type": "transform",
+            "params": {
+                "inputData": """
+                    SELECT *
+                    FROM training_dataset_%s
+                    WHERE label IS NOT NULL
+                """ % run_id,
+                "outputDataset": "rnd_forest_training_%s" % run_id
+            }
+        })
+
         rez = mldb2.put("/v1/procedures/trainer_" + run_id, {
             "type": "randomforest.binary.train",
             "params": {
@@ -284,8 +298,7 @@ def getSimilar(cls_func_name="explorator_cls"):
                     SELECT {* EXCLUDING(weight, label)} as features,
                            weight AS weight,
                            label = 0 AS label
-                    FROM training_dataset_%s
-                    WHERE label IS NOT NULL
+                    FROM rnd_forest_training_%s
                 """ % run_id,
                 "modelFileUrl": "file://"+modelAbsolutePath,
                 #"featureVectorSamplings": <int>,
