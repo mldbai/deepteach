@@ -275,35 +275,57 @@ def getSimilar(cls_func_name="explorator_cls"):
     to_delete.append("/v1/procedures/trainer_" + run_id)
     if not doDeploy:
         to_delete.append("/v1/functions/explorator_cls_" + run_id)
-    rez = mldb2.put("/v1/procedures/trainer_" + run_id, {
-        "type": "classifier.train",
-        "params": {
-            "trainingData": """
-                SELECT {* EXCLUDING(weight, label)} as features,
-                       weight AS weight,
-                       label = 0 AS label
-                FROM training_dataset_%s
-                WHERE label IS NOT NULL
-            """ % run_id,
-            "modelFileUrl": "file://"+modelAbsolutePath,
-            "algorithm": "my_bdt",
-            "configuration": {
-                "my_bdt": {
-                    "type": "bagging",
-                    "verbosity": 3,
-                    "weak_learner": {
-                        "type": "decision_tree",
-                        "verbosity": 0,
-                        "max_depth": 10,
-                        "random_feature_propn": numRndFeats,
-                    },
-                    "num_bags": numBags
-                }
-            },
-            "mode": "boolean",
-            "functionName": cls_func_name
-        }
-    })
+
+    if True:
+        rez = mldb2.put("/v1/procedures/trainer_" + run_id, {
+            "type": "randomforest.binary.train",
+            "params": {
+                "trainingData": """
+                    SELECT {* EXCLUDING(weight, label)} as features,
+                           weight AS weight,
+                           label = 0 AS label
+                    FROM training_dataset_%s
+                    WHERE label IS NOT NULL
+                """ % run_id,
+                "modelFileUrl": "file://"+modelAbsolutePath,
+                #"featureVectorSamplings": <int>,
+                #"featureVectorSamplingProp": <float>,
+                #"featureSamplings": <int>,
+                "featureSamplingProp": numRndFeats,
+                "maxDepth": 10,
+                "functionName": cls_func_name
+            }
+        })
+    else:
+        rez = mldb2.put("/v1/procedures/trainer_" + run_id, {
+            "type": "classifier.train",
+            "params": {
+                "trainingData": """
+                    SELECT {* EXCLUDING(weight, label)} as features,
+                           weight AS weight,
+                           label = 0 AS label
+                    FROM training_dataset_%s
+                    WHERE label IS NOT NULL
+                """ % run_id,
+                "modelFileUrl": "file://"+modelAbsolutePath,
+                "algorithm": "my_bdt",
+                "configuration": {
+                    "my_bdt": {
+                        "type": "bagging",
+                        "verbosity": 3,
+                        "weak_learner": {
+                            "type": "decision_tree",
+                            "verbosity": 0,
+                            "max_depth": 10,
+                            "random_feature_propn": numRndFeats,
+                        },
+                        "num_bags": numBags
+                    }
+                },
+                "mode": "boolean",
+                "functionName": cls_func_name
+            }
+        })
     t1 = time.time()
     times["5 - training"] = t1-t0
 
