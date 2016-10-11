@@ -103,57 +103,63 @@ def getPrediction():
             return ("Error when trying to score image. Could not determine mime type. Probably not a JPEG image", 400)
 
         return ("Error scoring image: %s. URL: %s" % (str(e), input_data["image_url"]), 400)
-
-
-
+    
     mldb.log(score_query_rez)
     score = score_query_rez[1][1]
 
-    dataset = mldb2.query("""
-            select score.score from predictions_%s
-            where training_labels.label = 0 and training_labels.weight = 1
-            order by score.score ASC LIMIT 1
-        """ % input_data["deploy_id"])
-    min_score_for_pos = dataset[1][1]
 
-    dataset = mldb2.query("""
-            select score.score from predictions_%s
-            order by score.score DESC LIMIT 1
-        """ % input_data["deploy_id"])
-    maxScore = dataset[1][1]
+    return_val = {}
 
+    mldb.log(input_data)
 
-    rez = mldb2.query("""
-        SELECT * FROM merge(
-            (
-                select 'A' as class, datasetName, imagePrefix
-                from predictions_%s
+    if input_data["same_deploy"] == "false":
+        dataset = mldb2.query("""
+                select score.score from predictions_%s
                 where training_labels.label = 0 and training_labels.weight = 1
-                order by score.score DESC LIMIT 5
-            ),
-            (
-                select 'B' as class, datasetName, imagePrefix
-                from predictions_%s
-                where training_labels.label = 1
-                order by score.score ASC LIMIT 5
+                order by score.score ASC LIMIT 1
+            """ % input_data["deploy_id"])
+        min_score_for_pos = dataset[1][1]
+
+        dataset = mldb2.query("""
+                select score.score from predictions_%s
+                order by score.score DESC LIMIT 1
+            """ % input_data["deploy_id"])
+        maxScore = dataset[1][1]
+
+
+        rez = mldb2.query("""
+            SELECT * FROM merge(
+                (
+                    select 'A' as class, datasetName, imagePrefix
+                    from predictions_%s
+                    where training_labels.label = 0 and training_labels.weight = 1
+                    order by score.score DESC LIMIT 5
+                ),
+                (
+                    select 'B' as class, datasetName, imagePrefix
+                    from predictions_%s
+                    where training_labels.label = 1
+                    order by score.score ASC LIMIT 5
+                )
             )
-        )
-    """ % (input_data["deploy_id"], input_data["deploy_id"]))
+        """ % (input_data["deploy_id"], input_data["deploy_id"]))
 
-    example_images = {"A": [], "B": []}
-    for elem in rez[1:]:
-        example_images[elem[1]].append([elem[0], elem[2], elem[3]])
+        example_images = {"A": [], "B": []}
+        for elem in rez[1:]:
+            example_images[elem[1]].append([elem[0], elem[2], elem[3]])
 
 
-    return_val = {
-            "example_image": example_images,
-            "similarity": {
+        return_val["example_image"] = example_images
+        return_val["similarity"] =  {
                 "score": score,
                 "threshold": min_score_for_pos,
                 "max": maxScore
-            },
-            "prediction": "A" if score >= min_score_for_pos * 0.9 else "B"
-        }
+            }
+
+    else:
+        min_score_for_pos = json.loads(input_data["cachedSimilarity"])["threshold"]
+
+    return_val["prediction"] = "A" if score >= min_score_for_pos * 0.9 else "B"
 
 
     return (return_val, 200)
@@ -202,7 +208,7 @@ def getSimilar(cls_func_name="explorator_cls"):
                 neighbours = mldb2.query("select nearest_%s({coords: '%s'})[neighbors] as *" % (datasetName, img))
 
                 for nName in neighbours[1][1:]:
-                    to_add.append((nName, [["label", lbl, now], ["weight", 0.25, now]]))
+                    to_add.append((nName, [["label", lbl, now], ["weight", 0.05, now]]))
 
 
     # add the positive nearest neighbours if they were't added as
