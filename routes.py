@@ -198,7 +198,7 @@ def getSimilar(cls_func_name="explorator_cls"):
 
             # if it's the positive group, look at nearest neighbhours to add extra
             # labels in positive class in case we don't have enough
-            if lbl == 0 and len(imgs)<10 and not doDeploy:
+            if lbl == 0 and not doDeploy:
                 # will return list of ["slid","596e1ca6687cd301",1.9799363613128662]
                 neighbours = mldb2.query("select nearest_%s({coords: '%s'})[neighbors] as *" % (datasetName, img))
 
@@ -212,7 +212,7 @@ def getSimilar(cls_func_name="explorator_cls"):
         if row in already_added: continue
         dataset.record_row(row, cols)
         already_added.add(row)
-    
+
     dataset.commit()
 
     t1 = time.time()
@@ -226,8 +226,8 @@ def getSimilar(cls_func_name="explorator_cls"):
             "type": "transform",
             "params": {
                 "inputData": """
-                    SELECT label: 1, weight: 0.001 
-                    FROM %s 
+                    SELECT label: 1, weight: 0.001
+                    FROM %s
                     WHERE NOT (rowName() IN (SELECT rowName() FROM training_labels_pos_%s))
                 """ % (embeddingDataset, run_id),
                 "outputDataset": "training_labels_neg_"+run_id,
@@ -244,10 +244,9 @@ def getSimilar(cls_func_name="explorator_cls"):
                 ]
             }
         })
-    
+
         t1 = time.time()
         times["2 - add negex low weight"] = t1-t0
-
 
 
     t0 = time.time()
@@ -363,8 +362,8 @@ def getSimilar(cls_func_name="explorator_cls"):
         if x[0] in already_added: continue
         already_added.add(x[0])
         exploitB.append((x[0], 1-x[1]))
-    
-    
+
+
     t1 = time.time()
     times["7 - rest"] = t1-t0
 
