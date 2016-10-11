@@ -76,19 +76,9 @@
   <div class="panel-body">
 <table width="80%" border="0" cellpadding="10">
     <tr>
-        <td><b>Similarity with Target</b></td>
+        <td><b>Prediction</b></td>
         <td colspan="2">
             <br>
-            <!--
-            <div class="progress">
-              <div class="progress-bar progress-bar-danger" style="width: 35%" id="similarityRed">
-                <span class="sr-only"></span>
-              </div>
-              <div class="progress-bar progress-bar-success" style="width: 65%" id="similarityGreen">
-                <span class="sr-only"></span>
-              </div>
-            </div>
-            -->
             <div class="progress">
               <div class="progress-bar progress-bar-primary" style="width: 0%" id="similarity">
                 <span class="sr-only"></span>
@@ -97,21 +87,13 @@
         </td>
     </tr>
     <tr>
-        <td valign="top"><b>Prediction</b></td>
+        <td valign="top"></td>
         <td colspan="2">
             <div class="panel panel-success" id="predApannel">
               <div class="panel-heading">
-                <h3 class="panel-title">The prediction is 'Target'</h3>
+                <h3 class="panel-title">The prediction is <span id="prob"></span>% 'Target'</h3>
               </div>
               <div class="panel-body" id="predA">
-              </div>
-            </div>
-
-            <div class="panel panel-danger" id="predBpannel">
-              <div class="panel-heading">
-                <h3 class="panel-title">The prediction is 'Not Target'</h3>
-              </div>
-              <div class="panel-body" id="predB">
               </div>
             </div>
         </td>
@@ -217,12 +199,11 @@ $( document ).ready(function() {
 
 
                 $("#predA").empty();
-                $("#predApannel").hide();
-                $("#predB").empty();
-                $("#predBpannel").hide();
+                //$("#predApannel").hide();
+                //$("#predB").empty();
+                //$("#predBpannel").hide();
 
                 $("#distA").empty();
-                $("#distB").empty();
 
                 var imagePath = function(x) {
                     return x[2]+"/"+x[1]+"/"+x[0]+".jpg";
@@ -250,37 +231,26 @@ $( document ).ready(function() {
 
 
                 $("#distA").append("<p>"+data["similarity"]+"</p>");
-                //$("#distB").append("<p></p>");
-
-                // predicted good
-                /*
-                if(data["similarity"]["score"] >= data["similarity"]["threshold"]) {
-                    redSim = data["similarity"]["threshold"] / data["similarity"]["max"];
-                    greenSim = data["similarity"]["score"] / data["similarity"]["max"] - redSim;
-                }
-                // predicted bad
-                else {
-                    greenSim = 0;
-                    redSim = data["similarity"]["score"] / data["similarity"]["max"];
-                }
-                */
 
                 // use probabilizer
-                //sim = data["similarity"]["prob"];
+                sim = data["prob"];
 
-                sim = data["similarity"]["score"] / data["similarity"]["max"];
-
-
-                //$('#similarityRed').css('width', (redSim*100)+'%').attr('aria-valuenow', redSim * 100);
-                //$('#similarityGreen').css('width', (greenSim*100)+'%').attr('aria-valuenow', greenSim * 100);
 
                 $('#similarity').css('width', (sim*100)+'%').attr('aria-valuenow', sim * 100);
+                $('#prob').text((sim*100).toFixed(3));
 
-                //$('.progress-bar').innerHTML = similarity + "%";
 
-                $("#pred"+data["prediction"][0]).append("<img src=\""+$('#imageUrl').val()+"\" style=\"max-width:300px\">");
-                $("#pred"+data["prediction"][0]+"pannel").show();
+                $("#predA").append("<img src=\""+$('#imageUrl').val()+"\" style=\"max-width:300px\">");
+                $("#predApannel").show();
 
+                if      (sim>0.7)   newClass = "panel-success";
+                else if (sim>0.45)  newClass = "panel-warning";
+                else                newClass = "panel-danger";
+
+                $("#predApannel").removeClass("panel-success")
+                                .removeClass("panel-danger")
+                                .removeClass("panel-warning")
+                                .addClass(newClass);
             }
         });
     });
