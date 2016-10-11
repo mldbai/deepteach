@@ -10,12 +10,12 @@
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Image classifier</title>
+    <title>DeepTeach - Image classifier</title>
 </head>
 <body style="height: 900px">
     <i id="spinner" class="fa fa-spinner fa-spin fa-5x" style="position: fixed; left: 50%; top: 50%; display: none"></i>
  <div class="container">
-<h1>Image classifier</h1>
+<h1>DeepTeach - Image classifier</h1>
 
 <br>
 <div class="panel panel-default">
@@ -131,6 +131,9 @@ $( document ).ready(function() {
     $("#predictionPannel").hide();
     $("#showReminder").hide();
 
+    $.similarityCache = undefined;
+    $.lastDeployId = undefined;
+
     function getParameterByName(name, url) {
         if (!url) url = window.location.href;
         name = name.replace(/[\[\]]/g, "\\$&");
@@ -180,11 +183,18 @@ $( document ).ready(function() {
     $("#submitButton").click(function() {
         $.toggleSubmit(false);
         url = $('#imageUrl').val();
+        
+        sameDeployId = $('#deployId').val() == $.lastDeployId;
+        $.lastDeployId = $('#deployId').val();
+        if(!sameDeployId) $.similarityCache = undefined;
+        
         $.ajax({
           type: "POST",
           url: "../prediction",
           data: {
                 "deploy_id": $('#deployId').val(),
+                "same_deploy": sameDeployId,
+                "cachedSimilarity": JSON.stringify($.similarityCache),
                 "image_url": url
             },
           dataType: "json",
@@ -205,8 +215,6 @@ $( document ).ready(function() {
                 $("#predictionPannel").show();
 
 
-                $("#sampleA").empty();
-                $("#sampleB").empty();
 
                 $("#predA").empty();
                 $("#predApannel").hide();
@@ -220,12 +228,26 @@ $( document ).ready(function() {
                     return x[2]+"/"+x[1]+"/"+x[0]+".jpg";
                 };
 
-                for(var i=0; i<data["example_image"]["A"].length; i++) {
-                    $("#sampleA").append("<img src=\""+ imagePath(data["example_image"]["A"][i]) +"\" style=\"padding-left:5px;max-width: 200px\">");
+                // if we're using the cached results, don't update
+                if("example_image" in data) {
+                    $("#sampleA").empty();
+                    $("#sampleB").empty();
+
+                    for(var i=0; i<data["example_image"]["A"].length; i++) {
+                        $("#sampleA").append("<img src=\""+ imagePath(data["example_image"]["A"][i]) +
+                                "\" style=\"padding-left:5px;max-width: 200px\">");
+                    }
+                    for(var i=0; i<data["example_image"]["B"].length; i++) {
+                        $("#sampleB").append("<img src=\""+ imagePath(data["example_image"]["B"][i]) +
+                                "\" style=\"padding-left:5px;max-width:200px\">");
+                    }
+
+                    $.similarityCache = data["similarity"];
                 }
-                for(var i=0; i<data["example_image"]["B"].length; i++) {
-                    $("#sampleB").append("<img src=\""+ imagePath(data["example_image"]["B"][i]) +"\" style=\"padding-left:5px;max-width:200px\">");
+                else {
+                    data["similarity"] = $.similarityCache;
                 }
+
 
                 $("#distA").append("<p>"+data["similarity"]+"</p>");
                 //$("#distB").append("<p></p>");
@@ -264,8 +286,8 @@ $( document ).ready(function() {
     });
 
     $('#deployId').val(did);
-    if(did != null && did != '' ){
-      $("#spinner").hide()
+    if(did != null && did != '' ) {
+        $("#spinner").hide()
     }
 
 });
