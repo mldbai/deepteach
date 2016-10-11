@@ -91,22 +91,23 @@ def getPrediction():
 
     try:
         score_query_rez = mldb2.query("""
-                SELECT explorator_cls_%s(
-                                {
-                                    features: {*}
-                                }) as scores
+                SELECT score, prob_%s({score}) as *
                 FROM (
-                    SELECT inception({url: '%s'}) as *
+                    SELECT scorer_%s({features: {*}})[score] as score
+                    FROM (
+                        SELECT inception({url: '%s'}) as *
+                    )
                 )
-            """ % (input_data["deploy_id"], input_data["image_url"]))
+            """ % (input_data["deploy_id"], input_data["deploy_id"], input_data["image_url"]))
     except Exception as e:
         if unableToGetMimeType:
             return ("Error when trying to score image. Could not determine mime type. Probably not a JPEG image", 400)
 
         return ("Error scoring image: %s. URL: %s" % (str(e), input_data["image_url"]), 400)
-    
+
     mldb.log(score_query_rez)
-    score = score_query_rez[1][1]
+    score = score_query_rez[1][score_query_rez[0].index("score")]
+    prob = score_query_rez[1][score_query_rez[0].index("prob")]
 
 
     return_val = {}
@@ -114,20 +115,6 @@ def getPrediction():
     mldb.log(input_data)
 
     if input_data["same_deploy"] == "false":
-        dataset = mldb2.query("""
-                select score.score from predictions_%s
-                where training_labels.label = 0 and training_labels.weight = 1
-                order by score.score ASC LIMIT 1
-            """ % input_data["deploy_id"])
-        min_score_for_pos = dataset[1][1]
-
-        dataset = mldb2.query("""
-                select score.score from predictions_%s
-                order by score.score DESC LIMIT 1
-            """ % input_data["deploy_id"])
-        maxScore = dataset[1][1]
-
-
         rez = mldb2.query("""
             SELECT * FROM merge(
                 (
@@ -149,18 +136,10 @@ def getPrediction():
         for elem in rez[1:]:
             example_images[elem[1]].append([elem[0], elem[2], elem[3]])
 
-
         return_val["example_image"] = example_images
-        return_val["similarity"] =  {
-                "score": score,
-                "threshold": min_score_for_pos,
-                "max": maxScore
-            }
 
-    else:
-        min_score_for_pos = json.loads(input_data["cachedSimilarity"])["threshold"]
-
-    return_val["prediction"] = "A" if score >= min_score_for_pos * 0.9 else "B"
+    return_val["score"] = score
+    return_val["prob"] =  prob
 
 
     return (return_val, 200)
@@ -169,21 +148,22 @@ def getPrediction():
 
 
 
-def getSimilar(cls_func_name="explorator_cls"):
+def getSimilar():
 
     data, groups, doDeploy, datasetName, prefix, numBags, numRndFeats = preProcessData()
 
     embeddingDataset = EMBEDDING_DATASET + "_" + datasetName
 
     run_id = str(binascii.hexlify(os.urandom(16)))
-    cls_func_name += "_" + run_id
+    cls_func_name = "scorer_" + run_id
+    prob_func_name = "prob_" + run_id
 
     # keep track of ressources to delete
     to_delete = []
 
     dataset_config = {
         'type'    : 'sparse.mutable',
-        'id'      : "training_labels_pos_" + run_id if not doDeploy else "training_labels_"+run_id
+        'id'      : "training_labels_pos_"+run_id #"training_labels_pos_" + run_id if not doDeploy else "training_labels_"+run_id
     }
 
     to_delete.append("/v1/datasets/" + dataset_config["id"])
@@ -204,7 +184,7 @@ def getSimilar(cls_func_name="explorator_cls"):
 
             # if it's the positive group, look at nearest neighbhours to add extra
             # labels in positive class in case we don't have enough
-            if lbl == 0 and not doDeploy:
+            if lbl == 0: # and not doDeploy:
                 # will return list of ["slid","596e1ca6687cd301",1.9799363613128662]
                 neighbours = mldb2.query("select nearest_%s({coords: '%s'})[neighbors] as *" % (datasetName, img))
 
@@ -226,7 +206,7 @@ def getSimilar(cls_func_name="explorator_cls"):
 
     t0 = time.time()
     # now add all remaining examples as low weight negative examples
-    if not doDeploy:
+    if True: #not doDeploy:
         to_delete.append("/v1/datasets/training_labels_neg_" + run_id)
         mldb2.post("/v1/procedures", {
             "type": "transform",
@@ -274,14 +254,14 @@ def getSimilar(cls_func_name="explorator_cls"):
     if not os.path.exists(modelDir):
         os.makedirs(modelDir)
 
-    modelAbsolutePath = modelDir+"/dataset_creator_%s.cls.gz" % run_id
+    modelAbsolutePath = modelDir+"/deepteach_cls_%s.cls.gz" % run_id
 
     mldb.log("Training with %d bags, %0.2f rnd feats" % (numBags, numRndFeats))
 
     t0 = time.time()
     to_delete.append("/v1/procedures/trainer_" + run_id)
     if not doDeploy:
-        to_delete.append("/v1/functions/explorator_cls_" + run_id)
+        to_delete.append("/v1/functions/scorer_" + run_id)
 
     if True:
         to_delete.append("/v1/datasets/rnd_forest_training_%s" % run_id)
@@ -363,6 +343,46 @@ def getSimilar(cls_func_name="explorator_cls"):
 
 
     if doDeploy:
+        lbl_count = mldb2.query("""
+                SELECT count(*)
+                FROM training_dataset_%s
+                WHERE label IS NOT NULL
+                GROUP BY label""" % run_id)
+        pos_cnt = lbl_count[1][1]
+        neg_cnt = lbl_count[2][1]
+        total_cnt = float(pos_cnt+neg_cnt)
+
+        to_delete.append("/v1/datasets/prob_train_%s" % run_id)
+        mldb2.post("/v1/procedures", {
+            "type": "transform",
+            "params": {
+                "inputData": """
+                    SELECT %s({features: {*}})[score] as score,
+                           label = 0 AS label,
+                           CASE label
+                            WHEN 1 THEN %0.5f
+                            ELSE %0.5f
+                           END as weight
+                    FROM training_dataset_%s
+                    WHERE label IS NOT NULL
+                """ % (cls_func_name, pos_cnt/total_cnt, neg_cnt/total_cnt, run_id),
+                "outputDataset": "prob_train_%s" % run_id
+            }
+        })
+
+        probAbsolutePath = modelDir+"/deepteach_prob_%s.prob.gz" % run_id
+        mldb2.post("/v1/procedures", {
+            "type": "probabilizer.train",
+            "params": {
+                "trainingData": """
+                    select score, label, weight from prob_train_%s
+                """ % run_id,
+                "modelFileUrl": "file://"+probAbsolutePath,
+                "functionName": prob_func_name,
+            }
+        })
+
+
         mldb2.put("/v1/procedures/transformer", {
             "type": "transform",
             "params": {
