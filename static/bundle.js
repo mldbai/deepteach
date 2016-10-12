@@ -59,6 +59,7 @@
 	var foo = __webpack_require__(39);
 	var _VText = __webpack_require__(30);
 	var pie = __webpack_require__(40);
+	var lastDeployId = null;
 	function VText(t) {
 	    return addTags(new _VText(t));
 	}
@@ -103,16 +104,19 @@
 	        InitSortable();
 	        $("#spinner").hide();
 	        $(".startedHidden").show();
-	        if (deploy) {
-	            w.location.assign("rt_prediction.html?deploy_id=" + ret.deploy_id);
-	        }
+	        //if(deploy){
+	        //    w.location.assign(`rt_prediction.html?deploy_id=${ret.deploy_id}`)
+	        //}
+	        lastDeployId = ret.deploy_id;
 	    });
 	}
 	function onClick(evt) {
 	    sendSimilar(false);
 	}
 	function onDeploy(evt) {
-	    sendSimilar(true);
+	    //sendSimilar(true)
+	    var w = window.open('rt_prediction.html');
+	    w.location.assign("rt_prediction.html?deploy_id=" + lastDeployId);
 	}
 	function addAllToA(evt) {
 	    $('#panelMaybeA > span').appendTo('#panelA');

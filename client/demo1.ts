@@ -17,6 +17,8 @@ let foo = require('jquery-ui')
 let _VText = require('virtual-dom/vnode/vtext')
 import pie = require('./pie')
 
+let lastDeployId = null;
+
 function VText(t: string){
     return addTags(new _VText(t))
 }
@@ -83,9 +85,10 @@ function sendSimilar(deploy: boolean){
         InitSortable()
         $("#spinner").hide()
         $(".startedHidden").show()
-        if(deploy){
-            w.location.assign(`rt_prediction.html?deploy_id=${ret.deploy_id}`)
-        }
+        //if(deploy){
+        //    w.location.assign(`rt_prediction.html?deploy_id=${ret.deploy_id}`)
+        //}
+        lastDeployId = ret.deploy_id;
     })
 }
 
@@ -94,7 +97,9 @@ function onClick(evt: MouseEvent){
 }
 
 function onDeploy(evt: MouseEvent){
-    sendSimilar(true)
+    //sendSimilar(true)
+    let w = window.open('rt_prediction.html')
+    w.location.assign(`rt_prediction.html?deploy_id=${lastDeployId}`)
 }
 
 function addAllToA(evt: MouseEvent){

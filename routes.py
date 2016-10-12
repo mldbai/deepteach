@@ -27,7 +27,7 @@ def preProcessData():
 
     if "deploy" in rp:
         deploy = rp["deploy"]
-    
+
     if "prefix" in rp:
         prefix = rp["prefix"]
     if "numBags" in rp:
@@ -259,8 +259,8 @@ def getSimilar():
 
     t0 = time.time()
     to_delete.append("/v1/procedures/trainer_" + run_id)
-    if not doDeploy:
-        to_delete.append("/v1/functions/scorer_" + run_id)
+    #if not doDeploy:
+    #    to_delete.append("/v1/functions/scorer_" + run_id)
 
     if True:
         to_delete.append("/v1/datasets/rnd_forest_training_%s" % run_id)
@@ -341,7 +341,7 @@ def getSimilar():
     times["6 - scrore all examples"] = t1-t0
 
 
-    if doDeploy:
+    if True: #doDeploy:
         lbl_count = mldb2.query("""
                 SELECT count(*)
                 FROM training_dataset_%s
@@ -440,9 +440,9 @@ def getSimilar():
     for toDel in to_delete:
         mldb.log("    deleting " + toDel)
         mldb2.delete(toDel)
-    if not doDeploy:
-        mldb.log("    deleting " + modelAbsolutePath)
-        os.remove(modelAbsolutePath)
+    #if not doDeploy:
+    #    mldb.log("    deleting " + modelAbsolutePath)
+    #    os.remove(modelAbsolutePath)
 
     rtn_dict = {
         "a": {
@@ -457,7 +457,7 @@ def getSimilar():
         },
         "ignore": [],
         "sample": new_sample[:20],
-        "deploy_id": run_id if doDeploy else ""
+        "deploy_id": run_id #if doDeploy else ""
     }
 
     mldb.log(times)
