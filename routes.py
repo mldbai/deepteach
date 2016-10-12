@@ -15,7 +15,9 @@ EMBEDDING_DATASET = "embedded_images"
 
 
 def preProcessData():
-    rp = mldb.plugin.rest_params.rest_params
+    rp = json.loads(mldb.plugin.rest_params.payload)
+
+    mldb.log(rp)
 
     inputIndex = -1
     deploy = False
@@ -23,28 +25,25 @@ def preProcessData():
     numBags = 50
     numRndFeats = 0.1
 
-    for elem_idx, elem in enumerate(rp):
-        if elem[0] == "input":
-            inputIndex = elem_idx
-        elif elem[0] == "deploy" and elem[1] == "true":
-            deploy = True
-        elif elem[0] == "dataset":
-            dataset = elem[1]
-        elif elem[0] == "prefix":
-            prefix = elem[1]
-        elif elem[0] == "numBags":
-            numBags = int(elem[1])
-        elif elem[0] == "numRndFeats":
-            numRndFeats = float(elem[1])
+    if "deploy" in rp:
+        deploy = rp["deploy"]
+    
+    if "prefix" in rp:
+        prefix = rp["prefix"]
+    if "numBags" in rp:
+        numBags = int(rp["numBags"])
+    if "numRndFeats" in rp:
+        numRndFeats = float(rp["numRndFeats"])
 
-    if dataset is None:
+    if "dataset" not in rp:
         return ("Dataset needs to be specified", 400)
+    dataset = rp["dataset"]
 
-    if inputIndex == -1:
+    if "input" not in rp:
         mldb.log(rp)
         return ("Invalid input! (1)", 400)
 
-    data = json.loads(rp[inputIndex][1])
+    data = json.loads(rp["input"])
     if "a" not in data or "b" not in data:
         return ("Data dict must contain keys a and b", 400)
 
@@ -588,12 +587,10 @@ def persistEmbedding():
 msg = "Unknown route: " + mldb.plugin.rest_params.verb + " " + mldb.plugin.rest_params.remaining
 rtnCode = 400
 
-if mldb.plugin.rest_params.verb == "GET":
+if mldb.plugin.rest_params.verb == "POST":
     if mldb.plugin.rest_params.remaining == "/similar":
         (msg, rtnCode) = getSimilar()
-
-elif mldb.plugin.rest_params.verb == "POST":
-    if mldb.plugin.rest_params.remaining == "/embedFolder":
+    elif mldb.plugin.rest_params.remaining == "/embedFolder":
         (msg, rtnCode) = embedFolder()
     elif mldb.plugin.rest_params.remaining == "/persistEmbedding":
         (msg, rtnCode) = persistEmbedding()
