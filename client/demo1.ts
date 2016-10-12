@@ -60,9 +60,22 @@ function sendSimilar(deploy: boolean){
 
     let dataset = QueryString['dataset'];
     let prefix = QueryString['prefix'];
-    let url= `../similar?dataset=${dataset}&prefix=${prefix}&deploy=${deploy}&numBags=${numBags}&numRndFeats=${numRndFeats}&input=${JSON.stringify(data)}`
+    let formData = {
+        dataset: dataset,
+        prefix: prefix,
+        deploy: deploy,
+        numBags: numBags,
+        numRndFeats: numRndFeats,
+        input: JSON.stringify(data)
+    };
     let w = deploy ? window.open('rt_prediction.html') : null
-    $.ajax(url).done((ret: SimilarResponse) =>{
+    $.ajax({
+        "dataType": "json",
+        "processData": false,
+        "data": JSON.stringify(formData),
+        "url": "../similar",
+        "method": "POST"
+    }).done((ret: SimilarResponse) =>{
         let s = SimilarResponse2State(ret)
         let u = ui(s)
         let cs = document.body.children

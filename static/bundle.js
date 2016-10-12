@@ -80,9 +80,22 @@
 	    var numBags = $("#numBags").val();
 	    var dataset = QueryString['dataset'];
 	    var prefix = QueryString['prefix'];
-	    var url = "../similar?dataset=" + dataset + "&prefix=" + prefix + "&deploy=" + deploy + "&numBags=" + numBags + "&numRndFeats=" + numRndFeats + "&input=" + JSON.stringify(data);
+	    var formData = {
+	        dataset: dataset,
+	        prefix: prefix,
+	        deploy: deploy,
+	        numBags: numBags,
+	        numRndFeats: numRndFeats,
+	        input: JSON.stringify(data)
+	    };
 	    var w = deploy ? window.open('rt_prediction.html') : null;
-	    $.ajax(url).done(function (ret) {
+	    $.ajax({
+	        "dataType": "json",
+	        "processData": false,
+	        "data": JSON.stringify(formData),
+	        "url": "../similar",
+	        "method": "POST"
+	    }).done(function (ret) {
 	        var s = SimilarResponse2State(ret);
 	        var u = ui(s);
 	        var cs = document.body.children;
