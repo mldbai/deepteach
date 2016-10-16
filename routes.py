@@ -412,7 +412,15 @@ def getSimilar():
 
     numImgToBreak = min(10, int(len(scores) / 2))
 
-    half_idx = next(x[0] for x in enumerate(scores) if x[1][1] < 0.5)
+    splitInHalf = True
+    try:
+        half_idx = next(x[0] for x in enumerate(scores) if x[1][1] < 0.5)
+    except:
+        # the COMP_LOG_LOG prob link function gives us a smoother function
+        # from the negatives to the pos, but when there aren't a log of negs
+        # it might not go under 50%. this is to compensate
+        splitInHalf = False
+        half_idx = len(scores) / 2
 
 
     exploitA = []
@@ -440,7 +448,7 @@ def getSimilar():
 
     mldb.log(" ================ adding in b")
     for x in reversed(scores):
-        if x[1] > 0.5: break
+        if splitInHalf and x[1] > 0.5: break
         if len(exploitB) >= numImgToBreak: break
         if x[0] in already_added: continue
         already_added.add(x[0])
@@ -450,7 +458,7 @@ def getSimilar():
     mldb.log(" ================ adding in unsure")
 
     for x in scores[half_idx:]:
-        if x[1] > 0.5: break
+        if splitInHalf and x[1] > 0.5: break
         if len(unsure) >= numImgToBreak: break
         if x[0] in already_added: continue
         already_added.add(x[0])
