@@ -27,7 +27,7 @@ def preProcessData():
 
     if "deploy" in rp:
         deploy = rp["deploy"]
-    
+
     if "prefix" in rp:
         prefix = rp["prefix"]
     if "numBags" in rp:
@@ -48,7 +48,7 @@ def preProcessData():
         return ("Data dict must contain keys a and b", 400)
 
 
-    groups = [set(data["a"]), set(data["b"]), set(data["ignore"])]
+    groups = [set(data["a"]), set(data["b"])]
     for idx, name in enumerate(("a", "b")):
         if len(groups[idx]) == 0:
             return ("Data group '%s' cannot be empty!" % name, 400)
@@ -173,6 +173,11 @@ def getSimilar():
     to_add = []
     already_added = set()
 
+    num_posex = len(groups[0])
+    if   num_posex > 20: posex_weight = 0.001
+    elif num_posex > 10: posex_weight = 0.01
+    else:                posex_weight = 0.05
+
     times = {}
     t0 = time.time()
     for lbl, imgs in enumerate(groups):
@@ -188,7 +193,7 @@ def getSimilar():
                 neighbours = mldb2.query("select nearest_%s({coords: '%s'})[neighbors] as *" % (datasetName, img))
 
                 for nName in neighbours[1][1:]:
-                    to_add.append((nName, [["label", lbl, now], ["weight", 0.05, now]]))
+                    to_add.append((nName, [["label", lbl, now], ["weight", posex_weight, now]]))
 
 
     # add the positive nearest neighbours if they were't added as
@@ -261,7 +266,7 @@ def getSimilar():
     if not doDeploy:
         to_delete.append("/v1/functions/scorer_" + run_id)
 
-    if True:
+    if False:
         rez = mldb2.put("/v1/procedures/trainer_" + run_id, {
             "type": "randomforest.binary.train",
             "params": {
@@ -316,59 +321,50 @@ def getSimilar():
 
 
     t0 = time.time()
-    query = """
-        SELECT %s({features: {*}}) as *
-        FROM %s
-        ORDER BY score DESC""" % (cls_func_name, embeddingDataset)
-    scores = mldb2.query(query)
-    del scores[0]   # remove header
-    num_images = len(scores)
-    scores_dict = {v[0]: v[1] for v in scores}
+    lbl_count = mldb2.query("""
+            SELECT count(*)
+            FROM training_dataset_%s
+            WHERE label IS NOT NULL
+            GROUP BY label""" % run_id)
+    pos_cnt = lbl_count[1][1]
+    neg_cnt = lbl_count[2][1]
+    num_images = float(pos_cnt+neg_cnt)
+
+    to_delete.append("/v1/datasets/prob_train_%s" % run_id)
+    mldb2.post("/v1/procedures", {
+        "type": "transform",
+        "params": {
+            "inputData": """
+                SELECT %s({features: {*}})[score] as score,
+                       label = 0 AS label,
+                       CASE label
+                        WHEN 1 THEN %0.5f
+                        ELSE %0.5f
+                       END as weight
+                FROM training_dataset_%s
+                WHERE label IS NOT NULL
+            """ % (cls_func_name, pos_cnt/num_images, neg_cnt/num_images, run_id),
+            "outputDataset": "prob_train_%s" % run_id
+        }
+    })
+
+    probAbsolutePath = modelDir+"/deepteach_prob_%s.prob.gz" % run_id
+    mldb2.post("/v1/procedures", {
+        "type": "probabilizer.train",
+        "params": {
+            "trainingData": """
+                select score, label, weight from prob_train_%s
+            """ % run_id,
+            "modelFileUrl": "file://"+probAbsolutePath,
+            "link": "COMP_LOG_LOG",
+            "functionName": prob_func_name,
+        }
+    })
     t1 = time.time()
-    times["6 - scrore all examples"] = t1-t0
+    times["? - train prob"] = t1-t0
 
 
     if doDeploy:
-        lbl_count = mldb2.query("""
-                SELECT count(*)
-                FROM training_dataset_%s
-                WHERE label IS NOT NULL
-                GROUP BY label""" % run_id)
-        pos_cnt = lbl_count[1][1]
-        neg_cnt = lbl_count[2][1]
-        total_cnt = float(pos_cnt+neg_cnt)
-
-        to_delete.append("/v1/datasets/prob_train_%s" % run_id)
-        mldb2.post("/v1/procedures", {
-            "type": "transform",
-            "params": {
-                "inputData": """
-                    SELECT %s({features: {*}})[score] as score,
-                           label = 0 AS label,
-                           CASE label
-                            WHEN 1 THEN %0.5f
-                            ELSE %0.5f
-                           END as weight
-                    FROM training_dataset_%s
-                    WHERE label IS NOT NULL
-                """ % (cls_func_name, pos_cnt/total_cnt, neg_cnt/total_cnt, run_id),
-                "outputDataset": "prob_train_%s" % run_id
-            }
-        })
-
-        probAbsolutePath = modelDir+"/deepteach_prob_%s.prob.gz" % run_id
-        mldb2.post("/v1/procedures", {
-            "type": "probabilizer.train",
-            "params": {
-                "trainingData": """
-                    select score, label, weight from prob_train_%s
-                """ % run_id,
-                "modelFileUrl": "file://"+probAbsolutePath,
-                "functionName": prob_func_name,
-            }
-        })
-
-
         mldb2.put("/v1/procedures/transformer", {
             "type": "transform",
             "params": {
@@ -391,34 +387,85 @@ def getSimilar():
     t0 = time.time()
     already_added = groups[0].union(groups[1])
 
-    grpA = [ (x, scores_dict[x])   for x in groups[0] ]
-    grpB = [ (x, 1-scores_dict[x]) for x in groups[1] ]
+
+    mldb2.put("/v1/procedures/transformer", {
+        "type": "transform",
+        "params": {
+            "inputData": """
+                SELECT score, prob_%s({score}) as *
+                FROM (
+                    SELECT scorer_%s({features: {*}})[score] as score
+                    FROM %s
+                )
+            """ % (run_id, run_id, embeddingDataset),
+            "outputDataset": "predictions_prob_%s" % run_id
+        }
+    })
+
+    scores = mldb2.query("SELECT prob FROM predictions_prob_%s ORDER BY prob DESC" % run_id)
+    del scores[0]
+    scores_dict = {v[0]: v[1] for v in scores}
+    mldb.log(scores_dict)
+
+    grpA = [ (x, scores_dict[x]) for x in groups[0] ]
+    grpB = [ (x, scores_dict[x]) for x in groups[1] ]
 
     numImgToBreak = min(10, int(len(scores) / 2))
 
+    half_idx = next(x[0] for x in enumerate(scores) if x[1][1] < 0.5)
+
+
     exploitA = []
     exploitB = []
+    unsure = []
+
+    mldb.log(" ================ adding in a")
     for x in scores:
+        if x[1] < 0.5: break
         if len(exploitA) >= numImgToBreak: break
         if x[0] in already_added: continue
         already_added.add(x[0])
         exploitA.append(x)
+        mldb.log(x)
 
+    mldb.log(" ================ adding in unsure")
+
+    for x in scores[:half_idx]:
+        if x[1] < 0.5: break
+        if len(unsure) >= numImgToBreak/2: break
+        if x[0] in already_added: continue
+        already_added.add(x[0])
+        unsure.append(x)
+        mldb.log(x)
+
+    mldb.log(" ================ adding in b")
     for x in reversed(scores):
+        if x[1] > 0.5: break
         if len(exploitB) >= numImgToBreak: break
         if x[0] in already_added: continue
         already_added.add(x[0])
-        exploitB.append((x[0], 1-x[1]))
+        exploitB.append(x)
+        mldb.log(x)
+
+    mldb.log(" ================ adding in unsure")
+
+    for x in scores[half_idx:]:
+        if x[1] > 0.5: break
+        if len(unsure) >= numImgToBreak: break
+        if x[0] in already_added: continue
+        already_added.add(x[0])
+        unsure.append(x)
+        mldb.log(x)
 
 
     t1 = time.time()
     times["7 - rest"] = t1-t0
 
     t0 = time.time()
-    new_sample = []
     for elem in mldb2.query("select rowName() from sample(%s, {rows:%d})" % (embeddingDataset, min(100, num_images)))[1:]:
         if elem[0] in already_added: continue
-        new_sample.append([elem[0],scores_dict[elem[0]]])
+        if len(unsure) >= 20: break
+        unsure.append([elem[0],scores_dict[elem[0]]])
     t1 = time.time()
     times["8 - sample"] = t1-t0
 
@@ -430,6 +477,8 @@ def getSimilar():
     if not doDeploy:
         mldb.log("    deleting " + modelAbsolutePath)
         os.remove(modelAbsolutePath)
+        mldb.log("    deleting " + probAbsolutePath)
+        os.remove(probAbsolutePath)
 
     rtn_dict = {
         "a": {
@@ -442,8 +491,7 @@ def getSimilar():
             "exploit": [],
             "explore": exploitB,
         },
-        "ignore": [],
-        "sample": new_sample[:20],
+        "sample": unsure,
         "deploy_id": run_id if doDeploy else ""
     }
 

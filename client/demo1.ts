@@ -33,15 +33,13 @@ interface GroupResult{
 interface SimilarResponse {
     a: GroupResult,
     b: GroupResult,
-    ignore: IdDist[],
     sample: IdDist[],
     deploy_id: string,
 }
 
-function SimilarResponse2State(s: SimilarResponse) : State{
+function SimilarResponse2State(s: SimilarResponse) : State {
     return {
         samples : s.sample,
-        ignore  : s.ignore,
         a       : s.a.prev.concat(s.a.exploit),
         b       : s.b.prev.concat(s.b.exploit),
         maybeA  : s.a.explore,
@@ -53,7 +51,7 @@ function sendSimilar(deploy: boolean){
     $("#spinner").show()
 
     let f = (id: string ) => $(`#${id}  img`).map((idx:number, o: Element) => o.id).get()
-    let data = {a: f('panelA'), b: f('panelB'), ignore: f('panelI')}
+    let data = {a: f('panelA'), b: f('panelB')}
 
     let numRndFeats = $("#numRndFeats").val();
     let numBags = $("#numBags").val();
@@ -109,7 +107,6 @@ type Row = [string]
 
 interface State{
     samples : IdDist[]
-    ignore  : IdDist[]
     a       : IdDist[]
     maybeA  : IdDist[]
     b       : IdDist[]
@@ -232,7 +229,6 @@ function ui (s: State){
     let btn3 = createButton(addAllToB)
     let h2p = {style: { textAlign: "center", fontSize: "25px"}}
     let hidden = {className: 'startedHidden', style: {display: "none"}}
-    //let h2p = {style: { textAlign: "center", fontSize: "22px",  marginLeft: "5px" }, className: 'label label-info'}
     let c2 = {colSpan: 2, vAlign: "top"}
     let c3 = {colSpan: 3}
     let c4 = {colSpan: 4}
@@ -250,7 +246,6 @@ function ui (s: State){
 function rows2State(rows: Row[]): State{
     return {
         samples: rows.map(row => [row[0], 0]),
-        ignore: [],
         a: [],
         b: [],
         maybeA: [],

@@ -65,7 +65,6 @@
 	function SimilarResponse2State(s) {
 	    return {
 	        samples: s.sample,
-	        ignore: s.ignore,
 	        a: s.a.prev.concat(s.a.exploit),
 	        b: s.b.prev.concat(s.b.exploit),
 	        maybeA: s.a.explore,
@@ -75,7 +74,7 @@
 	function sendSimilar(deploy) {
 	    $("#spinner").show();
 	    var f = function (id) { return $("#" + id + "  img").map(function (idx, o) { return o.id; }).get(); };
-	    var data = { a: f('panelA'), b: f('panelB'), ignore: f('panelI') };
+	    var data = { a: f('panelA'), b: f('panelB') };
 	    var numRndFeats = $("#numRndFeats").val();
 	    var numBags = $("#numBags").val();
 	    var dataset = QueryString['dataset'];
@@ -220,7 +219,6 @@
 	    var btn3 = createButton(addAllToB);
 	    var h2p = { style: { textAlign: "center", fontSize: "25px" } };
 	    var hidden = { className: 'startedHidden', style: { display: "none" } };
-	    //let h2p = {style: { textAlign: "center", fontSize: "22px",  marginLeft: "5px" }, className: 'label label-info'}
 	    var c2 = { colSpan: 2, vAlign: "top" };
 	    var c3 = { colSpan: 3 };
 	    var c4 = { colSpan: 4 };
@@ -237,7 +235,6 @@
 	function rows2State(rows) {
 	    return {
 	        samples: rows.map(function (row) { return [row[0], 0]; }),
-	        ignore: [],
 	        a: [],
 	        b: [],
 	        maybeA: [],
@@ -39352,7 +39349,7 @@
 	var svg = __webpack_require__(41);
 	function pie(percent, color) {
 	    // create a one slice pie chart with percent as percentage and color.
-	    if (percent < 0.01) {
+	    if (percent == 0) {
 	        return null;
 	    }
 	    if (percent > 0.999) {

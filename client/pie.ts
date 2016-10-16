@@ -7,7 +7,7 @@ let svg = require('virtual-dom/virtual-hyperscript/svg') as (tagName: string, pr
 
 function pie(percent: number, color: string){
     // create a one slice pie chart with percent as percentage and color.
-    if( percent < 0.01 ){
+    if( percent == 0 ){
         return null
     }
     if( percent > 0.999 ){
