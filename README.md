@@ -10,7 +10,8 @@ user is looking for. It's a combination of deep learning, transfer learning and 
 
 Some links:
 
-- Upcoming Youtube Video
+- [DeepTeach Youtube Demo](https://youtu.be/7hZ3X37Qwc4)
+- Upcoming DeepTeach Blog Post
 - Upcoming KDNuggets guest blog post
 
 Try *DeepTeach* for free! Just create a [free MLDB.ai account](https://mldb.ai/#signup) 
