@@ -4,6 +4,8 @@ DeepTeach is an MLDB.ai plugin that allows a user to teach a machine learning mo
 images he’s looking for through an iterative process. It's a great example of human augmentation, where 
 machine learning is used to make humans more efficient.
 
+![alt text](http://blog.mldb.ai/img/deepteach.jpg "DeepTeach screen shot")
+
 The plugin uses the Inception-v3 model, a deep convolutional neural network, as its feature generator. It 
 then uses the user's input to train a bagged boosted decision tree in order to learn the type of image the
 user is looking for. It's a combination of active learning, deep learning, transfer learning and similarity search.
