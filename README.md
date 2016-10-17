@@ -6,13 +6,13 @@ machine learning is used to make humans more efficient.
 
 The plugin uses the Inception-v3 model, a deep convolutional neural network, as its feature generator. It 
 then uses the user's input to train a bagged boosted decision tree in order to learn the type of image the
-user is looking for. It's a combination of deep learning, transfer learning and similarity search.
+user is looking for. It's a combination of active learning, deep learning, transfer learning and similarity search.
 
 Some links:
 
 - [DeepTeach Youtube Demo](https://youtu.be/7hZ3X37Qwc4)
-- Upcoming DeepTeach Blog Post
-- Upcoming KDNuggets guest blog post
+- [DeepTeach Blog Post](http://blog.mldb.ai/blog/posts/2016/10/deepteach/)
+- [KDNuggets guest blog post](http://www.kdnuggets.com/2016/10/mldb-machine-learning-database.html)
 
 Try *DeepTeach* for free! Just create a [free MLDB.ai account](https://mldb.ai/#signup) 
 to launch an instance and run the 
