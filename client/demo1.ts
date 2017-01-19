@@ -1,6 +1,6 @@
 //
 // Hao Deng, 2016-01-11
-// Copyright (c) 2016 Datacratic Inc. All rights reserved.
+// Copyright (c) 2016 mldb.ai inc. All rights reserved.
 
 // This code is written with trying new technology in mind ( virtual-dom),
 // and not necessarily the simplest solution.
