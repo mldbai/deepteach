@@ -69,7 +69,7 @@ what you're looking for! It uses deep learning, transfer learning and similarity
              <div class="form-group">
                  <label for="filesToUpload">Your images</label>
                  <input type="file" id="filesToUpload" multiple>
-                 <p class="help-block">You can only upload JPEG images.</p>
+                 <p class="help-block">You can only upload JPEG or PNG images.</p>
             </div>
             <button type="button" id="uploadButton" class="btn btn-primary" onclick="$.uploadFiles()">
                 <span class="glyphicon glyphicon-upload"></span>
@@ -122,8 +122,8 @@ $( document ).ready(function() {
 
         var reader  = new FileReader();
         function readAndUpload(fileId, file) {
-            // Make sure the file is a jpeg
-            if (!( /\.(jpe?g)$/i.test(file.name))) {
+            // Make sure the file is a jpeg or a png
+            if (!( /\.((jpe?g)|(png))$/i.test(file.name))) {
                 console.log("skipping " + file.name + " because extension is wrong!");
                 num_images--;
                 return;
