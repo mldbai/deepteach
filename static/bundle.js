@@ -124,7 +124,7 @@
 	    var dataset = QueryString['dataset'];
 	    var prefix = QueryString['prefix'];
 	    var img = h("img#" + imgId, {
-	        src: prefix + "/" + dataset + "/" + imgId + ".jpg",
+	        src: prefix + "/" + dataset + "/" + imgId,
 	        id: imgId,
 	        style: {
 	            margin: "4px", borderRadius: "25%", maxWidth: "200px"
@@ -286,7 +286,7 @@
 	        var num_images = rows[0][0];
 	        var sample_size = Math.min(num_images, 10);
 	        $.ajax({
-	            url: "../../../../../v1/query?q=select regex_replace(regex_replace(location, '/.*/', ''), '.jpg', '') from sample(" + dataset + ",{rows:" + sample_size + "})&format=table&rowNames=false&headers=false"
+	            url: "../../../../../v1/query?q=select regex_replace(location, '/.*/', '') from sample(" + dataset + ",{rows:" + sample_size + "})&format=table&rowNames=false&headers=false"
 	        }).done(function (rows) {
 	            var s = rows2State(rows);
 	            var u = ui(s);
