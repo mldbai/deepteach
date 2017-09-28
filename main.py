@@ -17,7 +17,8 @@ mldb.plugin.serve_static_folder("/static", "static")
 
 ###
 # Load embedding code for rt predictions
-inceptionUrl = "https://s3.amazonaws.com/public-mldb-ai/models/inception_dec_2015.zip"
+inceptionUrl = "file:///mldb_data/inception_dec_2015.zip"
+#inceptionUrl = "https://s3.amazonaws.com/public-mldb-ai/models/inception_dec_2015.zip"
 
 mldb.put('/v1/functions/fetch', {
     "type": 'fetcher',

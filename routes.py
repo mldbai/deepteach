@@ -9,6 +9,8 @@ from operator import itemgetter
 import functools, urllib, time
 import binascii
 
+if None:
+    mldb = None  # mute pep8
 mldb2 = mldb_wrapper.wrap(mldb)
 
 EMBEDDING_DATASET = "embedded_images"
@@ -95,7 +97,7 @@ def getPrediction():
             FROM (
                 SELECT scorer_%s({features: {*}})[score] as score
                 FROM (
-                    SELECT inceptionJpeg(content) as * FROM (
+                    SELECT inceptionJpeg({{content}}) as * FROM (
                         SELECT CASE
                             WHEN content IS NOT NULL
                                 THEN {content: content}
@@ -532,7 +534,59 @@ def getSimilar():
 
     return (rtn_dict, 200)
 
+def recreate_dataset():
+    mldb.log("RECREATING DATASET")
+    payload = json.loads(mldb.plugin.rest_params.payload)
+    mldb.log(payload)
 
+    unique_id = str(binascii.hexlify(os.urandom(16)))
+    collection_name = "dataset_" + payload['dataset'].replace(".", "").replace("/", "").replace("-", "_") + "_" + unique_id
+    collection_folder = os.path.join(mldb.plugin.get_plugin_dir(), "static", collection_name)
+    if not os.path.exists(collection_folder):
+        os.mkdir(collection_folder)
+
+    for idx, image in enumerate(payload["images"]):
+        if not image:
+            continue
+        if image[-1] == '\r':
+            image = image[:-1]
+        lower = image.lower()
+        if lower.endswith(".png"):
+            image_name = '{}.png'.format(idx)
+        elif lower.endswith(".jpg") or lower.endswith('.jpeg'):
+            image_name = '{}.jpg'.format(idx)
+
+        mldb2.log("URL: {}".format(image))
+        mldb2.log("NAME: {}".format(image_name))
+        res = mldb2.query("SELECT fetcher('{}')".format(image))
+        blob = res[1][1]['blob']
+
+        with open(collection_folder + '/' + image_name, 'wb') as f:
+            for idx in range(len(blob)):
+                if type(blob[idx]) is int:
+                    f.write(chr(blob[idx]))
+                elif type(blob[idx]) is unicode:
+                    f.write(blob[idx])
+                else:
+                    assert False, "should not be here"
+
+    payload = {
+        "name": collection_name,
+        "folder": collection_folder,
+        "limit": payload['limit']
+    }
+
+    mldb.log("calling embedding function")
+    embedFolderWithPayload(payload)
+
+    mldb2.put("/v1/functions/nearest_%s" % collection_name, {
+        "type": "embedding.neighbors",
+        "params": {
+            "dataset": "embedded_images_%s" % collection_name
+    }
+})
+
+    return (payload, 200)
 
 def createDataset():
     import base64, re, os
@@ -606,7 +660,7 @@ def embedFolderWithPayload(payload):
 
     # if we're loading images from disk
     for num_images, filename in enumerate(os.listdir(payload["folder"])):
-        if limit>0 and num_images+1 > limit:
+        if limit > 0 and num_images + 1 > limit:
             break
 
         mldb.log(" .%d : %s" % (num_images, filename))
@@ -620,19 +674,19 @@ def embedFolderWithPayload(payload):
         "type": "transform",
         "params": {
             "inputData": """
-                SELECT inceptionJpeg(content) FROM (
+                SELECT inceptionJpeg({{content}}) FROM (
                     SELECT CASE
                         WHEN content IS NOT NULL
                             THEN {{content: content}}
                         WHEN png_content IS NOT NULL
                             THEN {{content: tf_EncodeJpeg(png_content)}}
                         ELSE
-                            {content: NULL}
+                            {{content: NULL}}
                         END
                     FROM (
                         SELECT CASE
                             WHEN regex_search(mime, 'JPEG')
-                                THEN {content: content}}
+                                THEN {{content: content}}
                             WHEN regex_search(mime, 'PNG')
                                 THEN {{png_content: tf_DecodePng(content)}}
                             ELSE
@@ -711,6 +765,8 @@ if mldb.plugin.rest_params.verb == "POST":
         (msg, rtnCode) = getPrediction()
     elif mldb.plugin.rest_params.remaining == "/createDataset":
         (msg, rtnCode) = createDataset()
+    elif mldb.plugin.rest_params.remaining == "/recreateDataset":
+        (msg, rtnCode) = recreate_dataset()
 
 mldb.plugin.set_return(msg, rtnCode)
 

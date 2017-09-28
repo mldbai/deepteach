@@ -96,12 +96,12 @@ $( document ).ready(function() {
     });
 
 
-    $.uploadFiles = function(){
+    $.uploadFiles = function() {
         var preview = document.querySelector('img'); //selects the query named img
         var files    = document.querySelector('input[type=file]').files; //sames as here
 
-        if(files.length < 2) {
-            alert("Must select at least 2 images!");
+        if (files.length != 1) {
+            alert("Must select a file");
             return;
         }
 
@@ -115,66 +115,37 @@ $( document ).ready(function() {
         $("#uploadButton").text('Processing...');
         $("#uploadButton").prop('disabled', true);
         $("#status").html('Loading data locally...');
+      console.log("WAA HOU");
 
-
-        var num_images = files.length;
-        var image_data = [];
-
-        var reader  = new FileReader();
-        function readAndUpload(fileId, file) {
-            // Make sure the file is a jpeg or a png
-            if (!( /\.((jpe?g)|(png))$/i.test(file.name))) {
-                console.log("skipping " + file.name + " because extension is wrong!");
-                num_images--;
-                return;
-            }
-
-            var reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = function (event) {
-                var result = event.target.result;
-                image_data.push([file.name, result]);
-            }
-        }
-
-        for(var i=0; i<files.length; i++)
-            readAndUpload(i, files[i]);
-
-        var doPost = function() {
-            // if we're not done preparing, return for now
-            if(image_data.length != num_images) {
-                return;
-            }
-
-            // we're ready to go! clear timeout
-            clearTimeout(waitTillCanUpload);
-
-            $("#status").html('Uploading and processing images... This can take a while :)');
-            $.ajax({
-                method: "POST",
-                url: window.location.href.split("/").slice(0, -2).join("/") + "/createDataset",
-                data: JSON.stringify({
-                    "dataset": $('#collectionName').val(),
-                    "images": image_data,
-                    "limit": $('#imageLimit').val()
-                }),
-                dataType: "json",
-                error: function(msg) {
-                    alert( "An exception occured :(\n" +
-                        JSON.stringify(JSON.parse(msg.responseText), null, 2));
-                    $("#status").html('An error occured');
-                    $("#uploadButton").prop('disabled', false);
-                    $("#gears").hide();
-                },
-                success: function(e) {
-                    window.location.href = window.location.href.split("/").slice(0, -1).join("/") + "/dataset_builder.html?"+
-                            "prefix="+encodeURIComponent(window.location.href.split("/").slice(0, -1).join("/"))+
-                            "&dataset=" + e.name;
-                },
-            });
-        }
-
-        var waitTillCanUpload = setTimeout(doPost, 500);
+        $("#status").html('Uploading and processing images... This can take a while :)');
+        var reader = new FileReader();
+        reader.readAsText(files[0]);
+        reader.onload = function (event) {
+          var data = event.target.result.split("\n");
+          $("#status").html('Uploading and processing images... This can take a while :)');
+          $.ajax({
+              method: "POST",
+              url: window.location.href.split("/").slice(0, -2).join("/") + "/recreateDataset",
+              data: JSON.stringify({
+                  "dataset": $('#collectionName').val(),
+                  "images": data,
+                  "limit": $('#imageLimit').val()
+              }),
+              dataType: "json",
+              error: function(msg) {
+                  alert( "An exception occured :(\n" +
+                      JSON.stringify(JSON.parse(msg.responseText), null, 2));
+                  $("#status").html('An error occured');
+                  $("#uploadButton").prop('disabled', false);
+                  $("#gears").hide();
+              },
+              success: function(e) {
+                  window.location.href = window.location.href.split("/").slice(0, -1).join("/") + "/dataset_builder.html?"+
+                          "prefix="+encodeURIComponent(window.location.href.split("/").slice(0, -1).join("/"))+
+                          "&dataset=" + e.name;
+              },
+          });
+        };
     }
 
 });
