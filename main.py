@@ -24,11 +24,12 @@ mldb.put('/v1/functions/fetch', {
     "params": {}
 })
 
-mldb.put('/v1/functions/inception', {
+mldb.put('/v1/functions/inceptionJpeg', {
     "type": 'tensorflow.graph',
     "params": {
         "modelFileUrl": 'archive+' + inceptionUrl + '#tensorflow_inception_graph.pb',
-        "inputs": 'fetch({url})[content] AS "DecodeJpeg/contents"',
+        "inputs": 'content AS "DecodeJpeg/contents"',
+        #"inputs": 'fetch({url})[content] AS "DecodeJpeg/contents"',
         "outputs": "pool_3"
     }
 })

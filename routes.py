@@ -89,15 +89,40 @@ def getPrediction():
             return ("Real-time prediction only supports JPEG images. Mime type was '%s'" % mime, 400)
 
     try:
+        # TODO: unclear what happens on invalid img
         score_query_rez = mldb2.query("""
-                SELECT score, prob_%s({score}) as *
+            SELECT score, prob_%s({score}) as *
+            FROM (
+                SELECT scorer_%s({features: {*}})[score] as score
                 FROM (
-                    SELECT scorer_%s({features: {*}})[score] as score
-                    FROM (
-                        SELECT inception({url: '%s'}) as *
+                    SELECT inceptionJpeg(content) as * FROM (
+                        SELECT CASE
+                            WHEN content IS NOT NULL
+                                THEN {content: content}
+                            WHEN png_content IS NOT NULL
+                                THEN {content: tf_EncodeJpeg(png_content)}
+                            ELSE
+                                {content: NULL}
+                            END
+                        FROM (
+                            SELECT CASE
+                                WHEN regex_search(mime, 'JPEG')
+                                    THEN {content: content}
+                                WHEN regex_search(mime, 'PNG')
+                                    THEN {png_content: tf_DecodePng(content)}
+                                ELSE
+                                    {content: NULL}
+                                END AS *
+                            FROM (
+                                SELECT content, mime_type(content) AS mime FROM (
+                                    SELECT fetcher('%s') AS *
+                                ) WHERE error IS NULL
+                            )
+                        )
                     )
                 )
-            """ % (input_data["deploy_id"], input_data["deploy_id"], input_data["image_url"]))
+            )
+        """ % (input_data["deploy_id"], input_data["deploy_id"], input_data["image_url"]))
     except Exception as e:
         if unableToGetMimeType:
             return ("Error when trying to score image. Could not determine mime type. Probably not a JPEG image", 400)
@@ -590,13 +615,38 @@ def embedFolderWithPayload(payload):
     dataset.commit()
 
     # now embed images
+    # TODO don't drop the errors into the void
     mldb2.put("/v1/procedures/embedder", {
         "type": "transform",
         "params": {
             "inputData": """
-                SELECT inception({url: location}) AS *
-                FROM %s
-            """ % payload["name"],
+                SELECT inceptionJpeg(content) FROM (
+                    SELECT CASE
+                        WHEN content IS NOT NULL
+                            THEN {{content: content}}
+                        WHEN png_content IS NOT NULL
+                            THEN {{content: tf_EncodeJpeg(png_content)}}
+                        ELSE
+                            {content: NULL}
+                        END
+                    FROM (
+                        SELECT CASE
+                            WHEN regex_search(mime, 'JPEG')
+                                THEN {content: content}}
+                            WHEN regex_search(mime, 'PNG')
+                                THEN {{png_content: tf_DecodePng(content)}}
+                            ELSE
+                                {{content: NULL}}
+                            END AS *
+                        FROM (
+                            SELECT content, mime_type(content) AS mime FROM (
+                                SELECT fetcher(location) AS *
+                                FROM {}
+                            ) WHERE error IS NULL
+                        )
+                    )
+                ) WHERE content IS NOT NULL
+            """.format(payload["name"]),
             "outputDataset": {
                 "id": EMBEDDING_DATASET + "_" + payload["name"],
                 "type": "embedding"
