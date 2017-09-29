@@ -92,6 +92,18 @@ def getPrediction():
 
     try:
         # TODO: unclear what happens on invalid img
+        # TODO FMLH===========
+#             "where" : "ResponseException: Response status code: 400. Response text: {\"details\":{\"entry\":\"embedder\",\"runError\":{\"details\":{\"
+# calc\":[\"rowPath()\"],\"context\":{\"details\":null,\"error\":\"Unable to run model: image must have 1 or 3 channels, got [512,512,4]\\n\\t [[Node: op = EncodeJpeg[chrom
+# a_downsampling=true, density_unit=\\\"in\\\", format=\\\"\\\", optimize_size=false, progressive=false, quality=95, x_density=300, xmp_metadata=\\\"\\\", y_density=300, _d
+# evice=\\\"/job:localhost/replica:0/task:0/cpu:0\\\"](_recv_image_0)]]\"},\"from\":{\"columnCount\":1048577,\"rowCount\":157},\"limit\":-1,\"offset\":0,\"orderBy\":\"\",\"
+# select\":\"CASE\\n                            WHEN content IS NOT NULL\\n                                THEN {content: content}\\n                            WHEN png_co
+# ntent IS NOT NULL\\n                                THEN {content: tf_EncodeJpeg(png_content)}\\n                            ELSE\\n                                {conte
+# nt: NULL}\\n                            END\",\"where\":\"true\"},\"error\":\"Execution error: Unable to run model: image must have 1 or 3 channels, got [512,512,4]\\n\\t
+#  [[Node: op = EncodeJpeg[chroma_downsampling=true, density_unit=\\\"in\\\", format=\\\"\\\", optimize_size=false, progressive=false, quality=95, x_density=300, xmp_metada
+# ta=\\\"\\\", y_density=300, _device=\\\"/job:localhost/replica:0/task:0/cpu:0\\\"](_recv_image_0)]]\",\"httpCode\":400}},\"error\":\"failed to create the initial run\",\"
+# httpCode\":400}\n"
+        # ============================================
         score_query_rez = mldb2.query("""
             SELECT score, prob_%s({score}) as *
             FROM (
@@ -545,21 +557,44 @@ def recreate_dataset():
     if not os.path.exists(collection_folder):
         os.mkdir(collection_folder)
 
+    # TODO DELETE
+    dataset = mldb2.create_dataset({
+        'id': 'deepteach_loader_tmp',
+        'type': 'sparse.mutable'
+    })
     for idx, image in enumerate(payload["images"]):
         if not image:
             continue
         if image[-1] == '\r':
             image = image[:-1]
-        lower = image.lower()
+        dataset.record_row(idx, [['image', image, 0]])
+    dataset.commit()
+
+    res = mldb2.query("SELECT image, fetcher(image) FROM deepteach_loader_tmp")
+    first = True
+    image_url_idx = 3
+    image_data_idx = 1
+    for idx, row in enumerate(res):
+        if first:
+            mldb.log(row)
+            assert row[0] == '_rowName', row[0]
+            assert row[1] == 'fetcher(image).content', row[1]
+            assert row[2] == 'fetcher(image).error', row[2]
+            assert row[image_url_idx] == 'image', row[image_url_idx]
+            first = False
+            continue
+
+        lower = row[image_url_idx].lower()
         if lower.endswith(".png"):
             image_name = '{}.png'.format(idx)
         elif lower.endswith(".jpg") or lower.endswith('.jpeg'):
             image_name = '{}.jpg'.format(idx)
+        else:
+            raise Exception("Wrong extension: {}".format(lower))
 
-        mldb2.log("URL: {}".format(image))
+        mldb2.log("URL: {}".format(row[image_url_idx]))
         mldb2.log("NAME: {}".format(image_name))
-        res = mldb2.query("SELECT fetcher('{}')".format(image))
-        blob = res[1][1]['blob']
+        blob = row[image_data_idx]['blob']
 
         with open(collection_folder + '/' + image_name, 'wb') as f:
             for idx in range(len(blob)):
